@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小蜜蜂采蜜</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 进入界面 -->
+    <div id="startScreen" class="screen active">
+        <div class="start-content">
+            <h1 class="game-title">小蜜蜂采蜜</h1>
+            <div class="character-showcase">
+                <div class="character"></div>
+            </div>
+            <button id="startButton" class="start-btn">开始游戏</button>
+        </div>
+    </div>
+    
+    <!-- 关卡选择界面 -->
+    <div id="levelSelect" class="screen">
+        <h2>选择关卡</h2>
+        <div class="level-grid">
+            <div class="level-item" data-level="1">
+                <span>关卡 1</span>
+                <div class="level-stars" data-level="1"></div>
+            </div>
+            <div class="level-item locked" data-level="2">
+                <span>关卡 2</span>
+                <div class="level-stars" data-level="2"></div>
+                <div class="lock-icon">🔒</div>
+            </div>
+            <div class="level-item locked" data-level="3">
+                <span>关卡 3</span>
+                <div class="level-stars" data-level="3"></div>
+                <div class="lock-icon">🔒</div>
+            </div>
+            <div class="level-item locked" data-level="4">
+                <span>关卡 4</span>
+                <div class="level-stars" data-level="4"></div>
+                <div class="lock-icon">🔒</div>
+            </div>
+            <div class="level-item locked" data-level="5">
+                <span>关卡 5</span>
+                <div class="level-stars" data-level="5"></div>
+                <div class="lock-icon">🔒</div>
+            </div>
+            <div class="level-item locked" data-level="6">
+                <span>关卡 6</span>
+                <div class="level-stars" data-level="6"></div>
+                <div class="lock-icon">🔒</div>
+            </div>
+            <div class="level-item locked" data-level="7">
+                <span>关卡 7</span>
+                <div class="level-stars" data-level="7"></div>
+                <div class="lock-icon">🔒</div>
+            </div>
+            <div class="level-item locked" data-level="8">
+                <span>关卡 8</span>
+                <div class="level-stars" data-level="8"></div>
+                <div class="lock-icon">🔒</div>
+            </div>
+            <div class="level-item locked" data-level="9">
+                <span>关卡 9</span>
+                <div class="level-stars" data-level="9"></div>
+                <div class="lock-icon">🔒</div>
+            </div>
+            <div class="level-item locked" data-level="10">
+                <span>关卡 10</span>
+                <div class="level-stars" data-level="10"></div>
+                <div class="lock-icon">🔒</div>
+            </div>
+        </div>
+        <button id="backToStart" class="back-btn">返回主界面</button>
+    </div>
+    
+    <!-- 游戏界面 -->
+    <div id="gameScreen" class="screen">
+        <div class="game-container">
+            <canvas id="gameCanvas" width="800" height="400"></canvas>
+            <div class="controls">
+                <h2>控制说明</h2>
+                <p>W - 跳跃</p>
+                <p>A - 向左移动</p>
+                <p>S - 向下移动</p>
+                <p>D - 向右移动</p>
+            </div>
+            <div id="honeyJarButton" class="honey-jar-button"></div>
+        </div>
+    </div>
+    
+    <!-- 设置界面 -->
+    <div id="settingsPopup" class="popup">
+        <div class="popup-content">
+            <h2>设置</h2>
+            <div class="popup-buttons">
+                <button id="restartFromSettings" class="popup-btn">重新开始</button>
+                <button id="backToLevelSelectFromSettings" class="popup-btn">返回选关</button>
+                <button id="backToMainFromSettings" class="popup-btn">返回主页</button>
+                <button id="closeSettings" class="popup-btn">关闭</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 游戏胜利弹窗 -->
+    <div id="winPopup" class="popup">
+        <div class="popup-content">
+            <h2>通关成功！</h2>
+            <p>恭喜你完成了关卡挑战！</p>
+            <div class="stars-container">
+                <div class="stars" id="stars"></div>
+            </div>
+            <div class="popup-buttons">
+                <button id="replayLevel" class="popup-btn">重玩本关</button>
+                <button id="nextLevel" class="popup-btn">下一关</button>
+                <button id="backToLevelSelect" class="popup-btn">返回关卡选择</button>
+                <button id="backToMenu" class="popup-btn">返回主界面</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 游戏失败弹窗 -->
+    <div id="gameOverPopup" class="popup">
+        <div class="popup-content">
+            <h2>游戏失败</h2>
+            <p>你的血条已清空，挑战失败！</p>
+            <div class="popup-buttons">
+                <button id="restartLevel" class="popup-btn">重新开始</button>
+                <button id="backToLevelSelect" class="popup-btn">返回关卡选择</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 全部关卡完成弹窗 -->
+    <div id="allLevelsCompletePopup" class="popup">
+        <div class="popup-content">
+            <h2>恭喜您已完成全部关卡！</h2>
+            <p>太棒了！你已经成功挑战了所有关卡！</p>
+            <div class="popup-buttons">
+                <button id="backToMenuFromAllComplete" class="popup-btn">返回主界面</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

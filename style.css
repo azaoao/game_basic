@@ -1,0 +1,377 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+/* 屏幕通用样式 */
+.screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.5s ease;
+}
+
+.screen.active {
+    display: flex;
+}
+
+/* 进入界面样式 */
+#startScreen {
+    background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
+    background-image: url('https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cherry%20blossom%20tree%20background%20with%20escalator%20and%20cartoon%20characters%20aza%20adventure%20title&image_size=landscape_16_9');
+    background-size: cover;
+    background-position: center;
+}
+
+.start-content {
+    text-align: center;
+    z-index: 10;
+    animation: fadeIn 1s ease-in-out;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    padding-bottom: 100px;
+}
+
+.game-title {
+    font-size: 4rem;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 3px 3px 0 #ff6b6b, 6px 6px 0 #4ecdc4;
+    margin-bottom: 2rem;
+    animation: bounce 1.5s infinite;
+    display: block;
+}
+
+.character-showcase {
+    display: none;
+}
+
+.start-btn {
+    padding: 15px 40px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+    animation: pulse 2s infinite;
+    margin-top: 2rem;
+}
+
+.start-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+}
+
+/* 关卡选择界面 */
+#levelSelect {
+    background: linear-gradient(135deg, #FFF8DC 0%, #FFD700 50%, #FFA500 100%);
+    flex-direction: column;
+    gap: 2rem;
+}
+
+#levelSelect h2 {
+    font-size: 2.5rem;
+    color: #333;
+    text-shadow: 2px 2px 4px rgba(255,255,255,0.8);
+}
+
+.level-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 120px);
+    gap: 1.5rem;
+}
+
+.level-item {
+    width: 120px;
+    height: 120px;
+    background: white;
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.level-item:hover:not(.locked) {
+    transform: translateY(-10px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.level-item.locked {
+    background: #e0e0e0;
+    cursor: not-allowed;
+}
+
+.level-item span {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #333;
+}
+
+.level-stars {
+    margin-top: 10px;
+    font-size: 1rem;
+    color: #ffd700;
+    text-align: center;
+}
+
+.lock-icon {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 1.5rem;
+}
+
+.back-btn {
+    padding: 10px 30px;
+    font-size: 1rem;
+    background: #333;
+    color: white;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.back-btn:hover {
+    background: #555;
+    transform: scale(1.05);
+}
+
+/* 游戏界面 */
+.game-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+/* 蜂蜜罐子按钮 */
+.honey-jar-button {
+    position: absolute;
+    top: 60px;
+    right: 20px;
+    width: 60px;
+    height: 80px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background-image: url('https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cartoon%20honey%20jar%20icon%20with%20yellow%20honey%20inside%20on%20transparent%20background&image_size=square');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.honey-jar-button:hover {
+    transform: scale(1.1);
+}
+
+.honey-jar-button::after {
+    content: '设置';
+    font-size: 12px;
+    font-weight: bold;
+    color: #333;
+    margin-top: 85px;
+    text-align: center;
+}
+
+canvas {
+    background-color: #87CEEB;
+    border: 2px solid #333;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    background-image: url('https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=minecraft%20sky%20background%20pixel%20art&image_size=landscape_16_9');
+    background-size: cover;
+    background-position: center;
+}
+
+.controls {
+    background-color: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.2);
+    text-align: center;
+}
+
+.controls h2 {
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.controls p {
+    margin: 5px 0;
+    color: #666;
+}
+
+/* 弹窗样式 */
+.popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.popup.active {
+    display: flex;
+    animation: fadeIn 0.3s ease;
+}
+
+.popup-content {
+    background: white;
+    padding: 30px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    animation: scaleIn 0.3s ease;
+}
+
+/* 设置界面样式 */
+#settingsPopup .popup-content {
+    background: linear-gradient(135deg, #FFF8DC 0%, #FFD700 100%);
+    border: 5px solid #FFA500;
+    border-radius: 20px;
+    clip-path: polygon(
+        50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%
+    );
+}
+
+#settingsPopup .popup-buttons {
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+}
+
+.popup-content h2 {
+    color: #ff6b6b;
+    margin-bottom: 15px;
+    font-size: 1.8rem;
+}
+
+.popup-content p {
+    margin-bottom: 20px;
+    color: #666;
+}
+
+.stars-container {
+    margin: 20px 0;
+    text-align: center;
+}
+
+.stars {
+    font-size: 2rem;
+    color: #ffd700;
+}
+
+/* 血条样式 */
+.health-bar {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    gap: 5px;
+}
+
+.health-item {
+    width: 30px;
+    height: 30px;
+    background-color: #ff6b6b;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.health-item.empty {
+    background-color: #ccc;
+}
+
+.popup-buttons {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+}
+
+.popup-btn {
+    padding: 10px 25px;
+    font-size: 1rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#nextLevel {
+    background: #4ecdc4;
+    color: white;
+}
+
+#backToMenu {
+    background: #ff6b6b;
+    color: white;
+}
+
+.popup-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-15px) rotate(5deg); }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes scaleIn {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
