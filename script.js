@@ -26,6 +26,14 @@ const closeSettings = document.getElementById('closeSettings');
 const stars = document.getElementById('stars');
 const levelItems = document.querySelectorAll('.level-item');
 
+// 虚拟按键元素
+const btnUp = document.getElementById('btnUp');
+const btnLeft = document.getElementById('btnLeft');
+const btnDown = document.getElementById('btnDown');
+const btnRight = document.getElementById('btnRight');
+const btnAttack = document.getElementById('btnAttack');
+const btnSwitch = document.getElementById('btnSwitch');
+
 // 游戏状态
 let currentLevel = 1;
 let gameOver = false;
@@ -1046,6 +1054,73 @@ backToMainFromSettings.addEventListener('click', () => {
 closeSettings.addEventListener('click', () => {
     settingsPopup.classList.remove('active');
 });
+
+// 虚拟按键事件监听器
+if (btnUp) {
+    // 上键 (W)
+    btnUp.addEventListener('touchstart', () => keys.w = true);
+    btnUp.addEventListener('touchend', () => keys.w = false);
+    btnUp.addEventListener('mousedown', () => keys.w = true);
+    btnUp.addEventListener('mouseup', () => keys.w = false);
+    btnUp.addEventListener('mouseleave', () => keys.w = false);
+}
+
+if (btnLeft) {
+    // 左键 (A)
+    btnLeft.addEventListener('touchstart', () => keys.a = true);
+    btnLeft.addEventListener('touchend', () => keys.a = false);
+    btnLeft.addEventListener('mousedown', () => keys.a = true);
+    btnLeft.addEventListener('mouseup', () => keys.a = false);
+    btnLeft.addEventListener('mouseleave', () => keys.a = false);
+}
+
+if (btnDown) {
+    // 下键 (S)
+    btnDown.addEventListener('touchstart', () => keys.s = true);
+    btnDown.addEventListener('touchend', () => keys.s = false);
+    btnDown.addEventListener('mousedown', () => keys.s = true);
+    btnDown.addEventListener('mouseup', () => keys.s = false);
+    btnDown.addEventListener('mouseleave', () => keys.s = false);
+}
+
+if (btnRight) {
+    // 右键 (D)
+    btnRight.addEventListener('touchstart', () => keys.d = true);
+    btnRight.addEventListener('touchend', () => keys.d = false);
+    btnRight.addEventListener('mousedown', () => keys.d = true);
+    btnRight.addEventListener('mouseup', () => keys.d = false);
+    btnRight.addEventListener('mouseleave', () => keys.d = false);
+}
+
+if (btnAttack) {
+    // 攻击键 (J)
+    btnAttack.addEventListener('touchstart', () => {
+        keys.j = true;
+        attack();
+    });
+    btnAttack.addEventListener('touchend', () => keys.j = false);
+    btnAttack.addEventListener('mousedown', () => {
+        keys.j = true;
+        attack();
+    });
+    btnAttack.addEventListener('mouseup', () => keys.j = false);
+    btnAttack.addEventListener('mouseleave', () => keys.j = false);
+}
+
+if (btnSwitch) {
+    // 切换武器键 (I)
+    btnSwitch.addEventListener('touchstart', () => {
+        keys.i = true;
+        switchWeapon();
+    });
+    btnSwitch.addEventListener('touchend', () => keys.i = false);
+    btnSwitch.addEventListener('mousedown', () => {
+        keys.i = true;
+        switchWeapon();
+    });
+    btnSwitch.addEventListener('mouseup', () => keys.i = false);
+    btnSwitch.addEventListener('mouseleave', () => keys.i = false);
+}
 
 // 开始游戏
 gameLoop();

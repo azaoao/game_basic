@@ -85,8 +85,27 @@
                 <p>A - 向左移动</p>
                 <p>S - 向下移动</p>
                 <p>D - 向右移动</p>
+                <p>J - 攻击</p>
+                <p>I - 切换武器</p>
             </div>
             <div id="honeyJarButton" class="honey-jar-button"></div>
+            
+            <!-- 虚拟按键 -->
+            <div class="virtual-controls">
+                <!-- 移动按键 (左下角) -->
+                <div class="move-controls">
+                    <button id="btnUp" class="virtual-btn up">W</button>
+                    <button id="btnLeft" class="virtual-btn left">A</button>
+                    <button id="btnDown" class="virtual-btn down">S</button>
+                    <button id="btnRight" class="virtual-btn right">D</button>
+                </div>
+                
+                <!-- 攻击按键 (右下角) -->
+                <div class="action-controls">
+                    <button id="btnAttack" class="virtual-btn attack">J</button>
+                    <button id="btnSwitch" class="virtual-btn switch">I</button>
+                </div>
+            </div>
         </div>
     </div>
     
