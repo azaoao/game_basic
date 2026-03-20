@@ -89,28 +89,56 @@ body {
 #levelSelect {
     background: linear-gradient(135deg, #FFF8DC 0%, #FFD700 50%, #FFA500 100%);
     flex-direction: column;
-    gap: 2rem;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    gap: 20px;
 }
 
 #levelSelect h2 {
     font-size: 2.5rem;
     color: #333;
     text-shadow: 2px 2px 4px rgba(255,255,255,0.8);
+    margin: 0;
+    text-align: center;
+}
+
+.level-container {
+    width: 100%;
+    max-width: 800px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 10px 0;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    margin-top: 10px;
+}
+
+.level-container::-webkit-scrollbar {
+    height: 6px;
+}
+
+.level-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+}
+
+.level-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 165, 0, 0.5);
+    border-radius: 10px;
 }
 
 .level-grid {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
     gap: 1.5rem;
     padding: 0 20px;
+    min-width: max-content;
+    align-items: center;
 }
 
 .level-item {
-    flex: 0 0 calc(20% - 1.5rem);
-    min-width: 100px;
-    max-width: 150px;
-    aspect-ratio: 1;
+    width: 120px;
+    height: 120px;
     background: white;
     border-radius: 15px;
     display: flex;
@@ -121,44 +149,37 @@ body {
     box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     transition: all 0.3s ease;
     position: relative;
+    flex-shrink: 0;
 }
 
-/* 响应式布局 */
+/* 响应式调整 */
 @media (max-width: 768px) {
+    #levelSelect {
+        padding: 20px 10px;
+        gap: 15px;
+    }
+    
     #levelSelect h2 {
         font-size: 2rem;
     }
     
+    .level-container {
+        max-width: 100%;
+    }
+    
     .level-item {
-        flex: 0 0 calc(50% - 1.5rem);
-        max-width: 120px;
+        width: 100px;
+        height: 100px;
+    }
+    
+    .level-grid {
+        gap: 1rem;
     }
 }
 
-@media (min-width: 769px) and (max-width: 1024px) {
-    .level-item {
-        flex: 0 0 calc(33.333% - 1.5rem);
-    }
-}
-
-@media (min-width: 1025px) {
-    .level-item {
-        flex: 0 0 calc(20% - 1.5rem);
-    }
-}
-
-/* 屏幕旋转适配 */
-@media (orientation: portrait) and (max-width: 768px) {
-    .level-item {
-        flex: 0 0 calc(50% - 1.5rem);
-        max-width: 100px;
-    }
-}
-
-@media (orientation: landscape) and (max-width: 1024px) {
-    .level-item {
-        flex: 0 0 calc(25% - 1.5rem);
-        max-width: 120px;
+@media (min-width: 769px) {
+    .level-container {
+        max-width: 800px;
     }
 }
 
