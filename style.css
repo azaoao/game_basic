@@ -99,14 +99,18 @@ body {
 }
 
 .level-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 120px);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 1.5rem;
+    padding: 0 20px;
 }
 
 .level-item {
-    width: 120px;
-    height: 120px;
+    flex: 0 0 calc(20% - 1.5rem);
+    min-width: 100px;
+    max-width: 150px;
+    aspect-ratio: 1;
     background: white;
     border-radius: 15px;
     display: flex;
@@ -117,6 +121,45 @@ body {
     box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     transition: all 0.3s ease;
     position: relative;
+}
+
+/* 响应式布局 */
+@media (max-width: 768px) {
+    #levelSelect h2 {
+        font-size: 2rem;
+    }
+    
+    .level-item {
+        flex: 0 0 calc(50% - 1.5rem);
+        max-width: 120px;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .level-item {
+        flex: 0 0 calc(33.333% - 1.5rem);
+    }
+}
+
+@media (min-width: 1025px) {
+    .level-item {
+        flex: 0 0 calc(20% - 1.5rem);
+    }
+}
+
+/* 屏幕旋转适配 */
+@media (orientation: portrait) and (max-width: 768px) {
+    .level-item {
+        flex: 0 0 calc(50% - 1.5rem);
+        max-width: 100px;
+    }
+}
+
+@media (orientation: landscape) and (max-width: 1024px) {
+    .level-item {
+        flex: 0 0 calc(25% - 1.5rem);
+        max-width: 120px;
+    }
 }
 
 .level-item:hover:not(.locked) {
