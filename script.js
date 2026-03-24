@@ -18,14 +18,17 @@ const winPopup = document.getElementById('winPopup');
 const allLevelsCompletePopup = document.getElementById('allLevelsCompletePopup');
 const gameOverPopup = document.getElementById('gameOverPopup');
 const settingsPopup = document.getElementById('settingsPopup');
+const keybindingsPopup = document.getElementById('keybindingsPopup');
 const shopScreen = document.getElementById('shopScreen');
 const customizeScreen = document.getElementById('customizeScreen');
 const startButton = document.getElementById('startButton');
 const shopButton = document.getElementById('shopButton');
 const customizeButton = document.getElementById('customizeButton');
+const memoryButton = document.getElementById('memoryButton');
 const backToStart = document.getElementById('backToStart');
 const backToStartFromShop = document.getElementById('backToStartFromShop');
 const backToStartFromCustomize = document.getElementById('backToStartFromCustomize');
+const backToStartFromMemory = document.getElementById('backToStartFromMemory');
 const nextLevel = document.getElementById('nextLevel');
 const backToMenu = document.getElementById('backToMenu');
 const replayLevel = document.getElementById('replayLevel');
@@ -37,6 +40,8 @@ const restartFromSettings = document.getElementById('restartFromSettings');
 const backToLevelSelectFromSettings = document.getElementById('backToLevelSelectFromSettings');
 const backToMainFromSettings = document.getElementById('backToMainFromSettings');
 const closeSettings = document.getElementById('closeSettings');
+const keybindingsButton = document.getElementById('keybindingsButton');
+const closeKeybindings = document.getElementById('closeKeybindings');
 const stars = document.getElementById('stars');
 const levelItems = document.querySelectorAll('.level-item');
 const coinCount = document.getElementById('coinCount');
@@ -45,6 +50,11 @@ const tabBtns = document.querySelectorAll('.tab-btn');
 const tabContents = document.querySelectorAll('.tab-content');
 const skinItems = document.querySelectorAll('.skin-item');
 const previewCharacter = document.getElementById('previewCharacter');
+const memoryScreen = document.getElementById('memoryScreen');
+const saveButton = document.getElementById('saveButton');
+const loadButton = document.getElementById('loadButton');
+const loadFile = document.getElementById('loadFile');
+const confirmLoad = document.getElementById('confirmLoad');
 
 // 虚拟按键元素
 const btnUp = document.getElementById('btnUp');
@@ -547,17 +557,155 @@ let unlockedLevels = 1;
 let currentLevelData = levels[0];
 
 // 事件监听
+// 键位映射
+let keybindings = {
+    jump: ' ',
+    left: 'a',
+    down: 's',
+    right: 'd',
+    attack: 'j',
+    switch: 'i'
+};
+
+// 从本地存储加载键位设置
+function loadKeybindings() {
+    const savedKeybindings = localStorage.getItem('keybindings');
+    if (savedKeybindings) {
+        keybindings = JSON.parse(savedKeybindings);
+    }
+}
+
+// 保存键位设置到本地存储
+function saveKeybindings() {
+    localStorage.setItem('keybindings', JSON.stringify(keybindings));
+}
+
+// 重置默认键位
+function resetKeybindings() {
+    keybindings = {
+        jump: ' ',
+        left: 'a',
+        down: 's',
+        right: 'd',
+        attack: 'j',
+        switch: 'i'
+    };
+    saveKeybindings();
+    updateKeybindingButtons();
+    alert('已重置默认键位');
+}
+
+// 更新键位按钮显示
+function updateKeybindingButtons() {
+    const keyJump = document.getElementById('keyJump');
+    const keyLeft = document.getElementById('keyLeft');
+    const keyDown = document.getElementById('keyDown');
+    const keyRight = document.getElementById('keyRight');
+    const keyAttack = document.getElementById('keyAttack');
+    const keySwitch = document.getElementById('keySwitch');
+    
+    if (keyJump) keyJump.textContent = keybindings.jump === ' ' ? '空格键' : keybindings.jump.toUpperCase();
+    if (keyLeft) keyLeft.textContent = keybindings.left.toUpperCase();
+    if (keyDown) keyDown.textContent = keybindings.down.toUpperCase();
+    if (keyRight) keyRight.textContent = keybindings.right.toUpperCase();
+    if (keyAttack) keyAttack.textContent = keybindings.attack.toUpperCase();
+    if (keySwitch) keySwitch.textContent = keybindings.switch.toUpperCase();
+    
+    // 更新控制说明
+    updateControlInstructions();
+}
+
+// 更新控制说明
+function updateControlInstructions() {
+    const controlJump = document.getElementById('controlJump');
+    const controlLeft = document.getElementById('controlLeft');
+    const controlDown = document.getElementById('controlDown');
+    const controlRight = document.getElementById('controlRight');
+    const controlAttack = document.getElementById('controlAttack');
+    const controlSwitch = document.getElementById('controlSwitch');
+    
+    if (controlJump) controlJump.textContent = (keybindings.jump === ' ' ? '空格键' : keybindings.jump.toUpperCase()) + ' - 跳跃';
+    if (controlLeft) controlLeft.textContent = keybindings.left.toUpperCase() + ' - 向左移动';
+    if (controlDown) controlDown.textContent = keybindings.down.toUpperCase() + ' - 向下移动';
+    if (controlRight) controlRight.textContent = keybindings.right.toUpperCase() + ' - 向右移动';
+    if (controlAttack) controlAttack.textContent = keybindings.attack.toUpperCase() + ' - 攻击';
+    if (controlSwitch) controlSwitch.textContent = keybindings.switch.toUpperCase() + ' - 切换武器';
+}
+
+// 录制键位
+function startRecordingKey(keyFunction) {
+    const button = document.getElementById(`key${keyFunction.charAt(0).toUpperCase() + keyFunction.slice(1)}`);
+    if (!button) return;
+    
+    button.textContent = '按任意键...';
+    button.classList.add('recording');
+    
+    const handleKeyPress = (e) => {
+        const key = e.key.toLowerCase();
+        // 防止使用功能键和修饰键
+        if (key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+            // 检查是否与其他键位冲突
+            let isConflict = false;
+            for (const [func, k] of Object.entries(keybindings)) {
+                if (func !== keyFunction && k === key) {
+                    isConflict = true;
+                    break;
+                }
+            }
+            
+            if (isConflict) {
+                alert('该键位已被使用，请选择其他键位');
+            } else {
+                keybindings[keyFunction] = key;
+                saveKeybindings();
+                updateKeybindingButtons();
+            }
+            
+            button.classList.remove('recording');
+            document.removeEventListener('keydown', handleKeyPress);
+        }
+    };
+    
+    document.addEventListener('keydown', handleKeyPress);
+    
+    // 3秒后自动取消录制
+    setTimeout(() => {
+        button.classList.remove('recording');
+        updateKeybindingButtons();
+        document.removeEventListener('keydown', handleKeyPress);
+    }, 3000);
+}
+
+// 绑定键位设置事件
+function bindKeybindingEvents() {
+    const keyJump = document.getElementById('keyJump');
+    const keyLeft = document.getElementById('keyLeft');
+    const keyDown = document.getElementById('keyDown');
+    const keyRight = document.getElementById('keyRight');
+    const keyAttack = document.getElementById('keyAttack');
+    const keySwitch = document.getElementById('keySwitch');
+    const resetKeybindingsBtn = document.getElementById('resetKeybindings');
+    
+    if (keyJump) keyJump.addEventListener('click', () => startRecordingKey('jump'));
+    if (keyLeft) keyLeft.addEventListener('click', () => startRecordingKey('left'));
+    if (keyDown) keyDown.addEventListener('click', () => startRecordingKey('down'));
+    if (keyRight) keyRight.addEventListener('click', () => startRecordingKey('right'));
+    if (keyAttack) keyAttack.addEventListener('click', () => startRecordingKey('attack'));
+    if (keySwitch) keySwitch.addEventListener('click', () => startRecordingKey('switch'));
+    if (resetKeybindingsBtn) resetKeybindingsBtn.addEventListener('click', resetKeybindings);
+}
+
 window.addEventListener('keydown', (e) => {
     const key = e.key.toLowerCase();
-    if (key === 'w') keys.w = true;
-    if (key === 'a') keys.a = true;
-    if (key === 's') keys.s = true;
-    if (key === 'd') keys.d = true;
-    if (key === 'j') {
+    if (key === keybindings.jump) keys.space = true;
+    if (key === keybindings.left) keys.a = true;
+    if (key === keybindings.down) keys.s = true;
+    if (key === keybindings.right) keys.d = true;
+    if (key === keybindings.attack) {
         keys.j = true;
         attack();
     }
-    if (key === 'i') {
+    if (key === keybindings.switch) {
         keys.i = true;
         switchWeapon();
     }
@@ -565,12 +713,12 @@ window.addEventListener('keydown', (e) => {
 
 window.addEventListener('keyup', (e) => {
     const key = e.key.toLowerCase();
-    if (key === 'w') keys.w = false;
-    if (key === 'a') keys.a = false;
-    if (key === 's') keys.s = false;
-    if (key === 'd') keys.d = false;
-    if (key === 'j') keys.j = false;
-    if (key === 'i') keys.i = false;
+    if (key === keybindings.jump) keys.space = false;
+    if (key === keybindings.left) keys.a = false;
+    if (key === keybindings.down) keys.s = false;
+    if (key === keybindings.right) keys.d = false;
+    if (key === keybindings.attack) keys.j = false;
+    if (key === keybindings.switch) keys.i = false;
 });
 
 
@@ -797,6 +945,11 @@ function initGame(level) {
         console.error('无效的关卡编号:', level);
         return;
     }
+    
+    // 加载键位设置
+    loadKeybindings();
+    // 更新控制说明
+    updateControlInstructions();
     
     currentLevel = level;
     currentLevelData = levels[level - 1];
@@ -1558,7 +1711,7 @@ function update() {
     }
     
     // 跳跃
-    if (keys.w && player.isGrounded) {
+    if (keys.space && player.isGrounded) {
         player.velocityY = -player.jumpForce;
         player.isGrounded = false;
         player.isJumping = true;
@@ -2627,7 +2780,7 @@ function handleCancelCrop() {
     document.getElementById('cropModal').style.display = 'none';
 }
 
-// 更新showScreen函数，添加对背包界面的支持
+// 更新showScreen函数，添加对背包界面和记忆回溯界面的支持
 function showScreen(screen) {
     // 隐藏所有屏幕和弹窗
     startScreen.classList.remove('active');
@@ -2640,6 +2793,7 @@ function showScreen(screen) {
     customizeScreen.classList.remove('active');
     document.getElementById('backpackScreen').classList.remove('active');
     document.getElementById('letterPopup').classList.remove('active');
+    memoryScreen.classList.remove('active');
     
     // 显示目标屏幕
     screen.classList.add('active');
@@ -2665,6 +2819,96 @@ function showScreen(screen) {
     }
 }
 
+// 存档功能
+function saveGame() {
+    // 收集游戏数据
+    const gameData = {
+        coins: coins,
+        currentSkin: currentSkin,
+        ownedSkins: ownedSkins,
+        customSkin: customSkin ? customSkin.src : null,
+        customSkinName: customSkinName,
+        backpack: backpack,
+        keybindings: keybindings,
+        unlockedLevels: unlockedLevels,
+        levelStars: levelStars
+    };
+    
+    // 转换为JSON字符串
+    const jsonData = JSON.stringify(gameData, null, 2);
+    
+    // 创建Blob对象
+    const blob = new Blob([jsonData], { type: 'application/json' });
+    
+    // 创建下载链接
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bee_game_save_${new Date().toISOString().slice(0, 19).replace(/[-:]/g, '')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    alert('游戏已存档');
+}
+
+// 读档功能
+function loadGame() {
+    const file = loadFile.files[0];
+    if (!file) {
+        alert('请选择存档文件');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const gameData = JSON.parse(e.target.result);
+            
+            // 加载游戏数据
+            coins = gameData.coins || 0;
+            currentSkin = gameData.currentSkin || 'bee';
+            ownedSkins = gameData.ownedSkins || ['bee'];
+            customSkinName = gameData.customSkinName || '自定义皮肤';
+            backpack = gameData.backpack || [];
+            keybindings = gameData.keybindings || {
+                jump: ' ',
+                left: 'a',
+                down: 's',
+                right: 'd',
+                attack: 'j',
+                switch: 'i'
+            };
+            unlockedLevels = gameData.unlockedLevels || 1;
+            levelStars = gameData.levelStars || {};
+            
+            // 加载自定义皮肤
+            if (gameData.customSkin) {
+                const img = new Image();
+                img.src = gameData.customSkin;
+                img.onload = function() {
+                    customSkin = img;
+                };
+            }
+            
+            // 保存键位设置
+            saveKeybindings();
+            
+            // 更新界面
+            updateCustomizeScreen();
+            updateControlInstructions();
+            updateBackpackScreen();
+            updateLevelSelect();
+            
+            alert('游戏已读档');
+        } catch (error) {
+            alert('存档文件格式错误');
+        }
+    };
+    reader.readAsText(file);
+}
+
 // 关卡选择
 levelItems.forEach(item => {
     item.addEventListener('click', () => {
@@ -2680,6 +2924,30 @@ honeyJarButton.addEventListener('click', () => {
     settingsPopup.classList.add('active');
     isPaused = true; // 暂停游戏
 });
+
+// 记忆回溯按钮点击事件
+memoryButton.addEventListener('click', () => {
+    showScreen(memoryScreen);
+});
+
+// 返回主界面按钮点击事件
+backToStartFromMemory.addEventListener('click', () => {
+    showScreen(startScreen);
+});
+
+// 存档按钮点击事件
+saveButton.addEventListener('click', saveGame);
+
+// 读档按钮点击事件
+loadButton.addEventListener('click', () => {
+    const loadSection = document.querySelector('.load-section');
+    if (loadSection) {
+        loadSection.style.display = 'block';
+    }
+});
+
+// 确认读档按钮点击事件
+confirmLoad.addEventListener('click', loadGame);
 
 // 设置界面按钮事件
 restartFromSettings.addEventListener('click', () => {
@@ -2705,14 +2973,33 @@ closeSettings.addEventListener('click', () => {
     isPaused = false; // 恢复游戏
 });
 
+// 键位设置按钮点击事件
+keybindingsButton.addEventListener('click', () => {
+    // 加载键位设置
+    loadKeybindings();
+    // 绑定键位设置事件
+    bindKeybindingEvents();
+    // 更新键位按钮显示
+    updateKeybindingButtons();
+    
+    settingsPopup.classList.remove('active');
+    keybindingsPopup.classList.add('active');
+});
+
+// 关闭键位设置弹窗
+closeKeybindings.addEventListener('click', () => {
+    keybindingsPopup.classList.remove('active');
+    settingsPopup.classList.add('active');
+});
+
 // 虚拟按键事件监听器
 if (btnUp) {
     // 上键 (W)
-    btnUp.addEventListener('touchstart', () => keys.w = true);
-    btnUp.addEventListener('touchend', () => keys.w = false);
-    btnUp.addEventListener('mousedown', () => keys.w = true);
-    btnUp.addEventListener('mouseup', () => keys.w = false);
-    btnUp.addEventListener('mouseleave', () => keys.w = false);
+    btnUp.addEventListener('touchstart', () => keys.space = true);
+    btnUp.addEventListener('touchend', () => keys.space = false);
+    btnUp.addEventListener('mousedown', () => keys.space = true);
+    btnUp.addEventListener('mouseup', () => keys.space = false);
+    btnUp.addEventListener('mouseleave', () => keys.space = false);
 }
 
 if (btnLeft) {

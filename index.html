@@ -21,6 +21,7 @@
                 <div class="backpack-icon"></div>
                 <div class="backpack-text">背包</div>
             </button>
+            <button id="memoryButton" class="start-btn">记忆回溯</button>
         </div>
     </div>
     
@@ -89,12 +90,12 @@
             <canvas id="gameCanvas" width="800" height="400"></canvas>
             <div class="controls">
                 <h2>控制说明</h2>
-                <p>W - 跳跃</p>
-                <p>A - 向左移动</p>
-                <p>S - 向下移动</p>
-                <p>D - 向右移动</p>
-                <p>J - 攻击</p>
-                <p>I - 切换武器</p>
+                <p id="controlJump">空格键 - 跳跃</p>
+                <p id="controlLeft">A - 向左移动</p>
+                <p id="controlDown">S - 向下移动</p>
+                <p id="controlRight">D - 向右移动</p>
+                <p id="controlAttack">J - 攻击</p>
+                <p id="controlSwitch">I - 切换武器</p>
             </div>
             <div id="honeyJarButton" class="honey-jar-button"></div>
             
@@ -121,12 +122,71 @@
     <div id="settingsPopup" class="popup">
         <div class="popup-content">
             <h2>设置</h2>
+            
             <div class="popup-buttons">
+                <button id="keybindingsButton" class="popup-btn">键位设置</button>
                 <button id="restartFromSettings" class="popup-btn">重新开始</button>
                 <button id="backToLevelSelectFromSettings" class="popup-btn">返回选关</button>
                 <button id="backToMainFromSettings" class="popup-btn">返回主页</button>
                 <button id="closeSettings" class="popup-btn">关闭</button>
             </div>
+        </div>
+    </div>
+    
+    <!-- 键位设置弹窗 -->
+    <div id="keybindingsPopup" class="popup">
+        <div class="popup-content">
+            <h2>键位设置</h2>
+            
+            <div class="settings-section">
+                <div class="keybindings">
+                    <div class="keybinding-item">
+                        <span>跳跃</span>
+                        <button id="keyJump" class="key-button">空格键</button>
+                    </div>
+                    <div class="keybinding-item">
+                        <span>向左移动</span>
+                        <button id="keyLeft" class="key-button">A</button>
+                    </div>
+                    <div class="keybinding-item">
+                        <span>向下移动</span>
+                        <button id="keyDown" class="key-button">S</button>
+                    </div>
+                    <div class="keybinding-item">
+                        <span>向右移动</span>
+                        <button id="keyRight" class="key-button">D</button>
+                    </div>
+                    <div class="keybinding-item">
+                        <span>攻击</span>
+                        <button id="keyAttack" class="key-button">J</button>
+                    </div>
+                    <div class="keybinding-item">
+                        <span>切换武器</span>
+                        <button id="keySwitch" class="key-button">I</button>
+                    </div>
+                </div>
+                <button id="resetKeybindings" class="reset-btn">重置默认键位</button>
+            </div>
+            
+            <div class="popup-buttons">
+                <button id="closeKeybindings" class="popup-btn">关闭</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 记忆回溯界面 -->
+    <div id="memoryScreen" class="screen">
+        <h2>记忆回溯</h2>
+        <div class="memory-content">
+            <div class="memory-buttons">
+                <button id="saveButton" class="memory-btn">存档</button>
+                <button id="loadButton" class="memory-btn">读档</button>
+            </div>
+            <div class="load-section" style="display: none;">
+                <input type="file" id="loadFile" accept=".json">
+                <button id="confirmLoad" class="memory-btn">确认读档</button>
+            </div>
+            <button id="backToStartFromMemory" class="back-btn">返回主界面</button>
         </div>
     </div>
     
