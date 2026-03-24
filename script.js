@@ -2,6 +2,14 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+// 相机系统
+const camera = {
+    x: 0,
+    y: 0,
+    width: canvas.width,
+    height: canvas.height
+};
+
 // 界面元素
 const startScreen = document.getElementById('startScreen');
 const levelSelect = document.getElementById('levelSelect');
@@ -10,8 +18,14 @@ const winPopup = document.getElementById('winPopup');
 const allLevelsCompletePopup = document.getElementById('allLevelsCompletePopup');
 const gameOverPopup = document.getElementById('gameOverPopup');
 const settingsPopup = document.getElementById('settingsPopup');
+const shopScreen = document.getElementById('shopScreen');
+const customizeScreen = document.getElementById('customizeScreen');
 const startButton = document.getElementById('startButton');
+const shopButton = document.getElementById('shopButton');
+const customizeButton = document.getElementById('customizeButton');
 const backToStart = document.getElementById('backToStart');
+const backToStartFromShop = document.getElementById('backToStartFromShop');
+const backToStartFromCustomize = document.getElementById('backToStartFromCustomize');
 const nextLevel = document.getElementById('nextLevel');
 const backToMenu = document.getElementById('backToMenu');
 const replayLevel = document.getElementById('replayLevel');
@@ -25,6 +39,12 @@ const backToMainFromSettings = document.getElementById('backToMainFromSettings')
 const closeSettings = document.getElementById('closeSettings');
 const stars = document.getElementById('stars');
 const levelItems = document.querySelectorAll('.level-item');
+const coinCount = document.getElementById('coinCount');
+const customizeCoinCount = document.getElementById('customizeCoinCount');
+const tabBtns = document.querySelectorAll('.tab-btn');
+const tabContents = document.querySelectorAll('.tab-content');
+const skinItems = document.querySelectorAll('.skin-item');
+const previewCharacter = document.getElementById('previewCharacter');
 
 // 虚拟按键元素
 const btnUp = document.getElementById('btnUp');
@@ -39,9 +59,35 @@ let currentLevel = 1;
 let gameOver = false;
 let levelComplete = false;
 let completionAnimation = 0;
+let isPaused = false;
 
 // 关卡星级存储
 let levelStars = {};
+
+// 金币系统
+let coins = 0;
+let coinsInLevel = [];
+
+// 皮肤系统
+let currentSkin = 'bee';
+let ownedSkins = ['bee'];
+let customSkin = null; // 存储自定义皮肤
+const skinData = {
+    bee: { name: '小蜜蜂', price: 0, unlocked: true },
+    orange: { name: '橙子', price: 10, unlocked: false },
+    apple: { name: '苹果', price: 10, unlocked: false },
+    butterfly: { name: '蝴蝶', price: 10, unlocked: false },
+    pineapple: { name: '菠萝', price: 10, unlocked: false },
+    special1: { name: '特殊外观', price: 0, unlocked: false },
+    custom: { name: '自定义', price: 0, unlocked: false }
+};
+
+// 背包系统
+let backpack = [];
+const itemData = {
+    coin: { name: '金币', icon: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cartoon%20gold%20coin%20icon%20on%20white%20background&image_size=square' },
+    letter: { name: '作者给你的信', icon: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cartoon%20envelope%20icon%20on%20white%20background&image_size=square' }
+};
 
 // 主角状态
 let playerHealth = 5;
@@ -106,148 +152,392 @@ const keys = {
 // 关卡设计
 const levels = [
     {
+        width: 1000, // 关卡1宽度
         platforms: [
-            { x: 0, y: 350, width: 800, height: 50 },
+            { x: 0, y: 350, width: 1000, height: 50 },
             { x: 200, y: 250, width: 150, height: 20 },
             { x: 450, y: 200, width: 150, height: 20 },
-            { x: 100, y: 150, width: 150, height: 20 }
+            { x: 700, y: 150, width: 150, height: 20 }
         ],
-        goal: { x: 150, y: 110, width: 40, height: 40 } // 调整到平台上
+        coins: [
+            { x: 275, y: 230, width: 20, height: 20 },
+            { x: 525, y: 180, width: 20, height: 20 },
+            { x: 775, y: 130, width: 20, height: 20 }
+        ],
+        goal: { x: 800, y: 110, width: 40, height: 40 } // 调整到平台上
     },
     {
+        width: 1200, // 关卡2宽度
         platforms: [
-            { x: 0, y: 350, width: 800, height: 50 },
+            { x: 0, y: 350, width: 1200, height: 50 },
             { x: 100, y: 300, width: 100, height: 20 },
             { x: 300, y: 250, width: 100, height: 20 },
             { x: 500, y: 200, width: 100, height: 20 },
-            { x: 200, y: 150, width: 100, height: 20 },
-            { x: 400, y: 100, width: 100, height: 20 }
+            { x: 700, y: 150, width: 100, height: 20 },
+            { x: 900, y: 100, width: 100, height: 20 }
         ],
-        goal: { x: 450, y: 60, width: 40, height: 40 }
+        coins: [
+            { x: 150, y: 280, width: 20, height: 20 },
+            { x: 350, y: 230, width: 20, height: 20 },
+            { x: 550, y: 180, width: 20, height: 20 },
+            { x: 750, y: 130, width: 20, height: 20 },
+            { x: 950, y: 80, width: 20, height: 20 }
+        ],
+        goal: { x: 1000, y: 60, width: 40, height: 40 }
     },
     {
+        width: 1400, // 关卡3宽度
         platforms: [
-            { x: 0, y: 350, width: 800, height: 50 },
+            { x: 0, y: 350, width: 1400, height: 50 },
             { x: 50, y: 300, width: 80, height: 20 },
             { x: 200, y: 250, width: 80, height: 20 },
             { x: 350, y: 200, width: 80, height: 20 },
             { x: 500, y: 150, width: 80, height: 20 },
             { x: 650, y: 100, width: 80, height: 20 },
-            { x: 125, y: 150, width: 80, height: 20 },
-            { x: 275, y: 100, width: 80, height: 20 },
-            { x: 425, y: 50, width: 80, height: 20 }
+            { x: 800, y: 150, width: 80, height: 20 },
+            { x: 950, y: 100, width: 80, height: 20 },
+            { x: 1100, y: 50, width: 80, height: 20 }
         ],
-        goal: { x: 465, y: 10, width: 40, height: 40 }
+        coins: [
+            { x: 90, y: 280, width: 20, height: 20 },
+            { x: 240, y: 230, width: 20, height: 20 },
+            { x: 390, y: 180, width: 20, height: 20 },
+            { x: 540, y: 130, width: 20, height: 20 },
+            { x: 690, y: 80, width: 20, height: 20 },
+            { x: 840, y: 130, width: 20, height: 20 },
+            { x: 990, y: 80, width: 20, height: 20 },
+            { x: 1140, y: 30, width: 20, height: 20 }
+        ],
+        goal: { x: 1200, y: 10, width: 40, height: 40 }
     },
     {
+        width: 1600, // 关卡4宽度
         platforms: [
-            { x: 0, y: 350, width: 800, height: 50 },
+            { x: 0, y: 350, width: 1600, height: 50 },
             { x: 150, y: 300, width: 90, height: 20 },
             { x: 350, y: 250, width: 90, height: 20 },
             { x: 550, y: 200, width: 90, height: 20 },
-            { x: 100, y: 200, width: 90, height: 20 },
-            { x: 300, y: 150, width: 90, height: 20 },
-            { x: 500, y: 100, width: 90, height: 20 },
-            { x: 200, y: 100, width: 90, height: 20 },
-            { x: 400, y: 50, width: 90, height: 20 }
+            { x: 750, y: 150, width: 90, height: 20 },
+            { x: 950, y: 100, width: 90, height: 20 },
+            { x: 1150, y: 150, width: 90, height: 20 },
+            { x: 1350, y: 100, width: 90, height: 20 }
         ],
-        goal: { x: 445, y: 10, width: 40, height: 40 }
+        spikes: [
+            { x: 250, y: 330, width: 30, height: 20 },
+            { x: 450, y: 330, width: 30, height: 20 },
+            { x: 650, y: 330, width: 30, height: 20 },
+            { x: 850, y: 330, width: 30, height: 20 },
+            { x: 1050, y: 330, width: 30, height: 20 },
+            { x: 1250, y: 330, width: 30, height: 20 }
+        ],
+        coins: [
+            { x: 195, y: 280, width: 20, height: 20 },
+            { x: 395, y: 230, width: 20, height: 20 },
+            { x: 595, y: 180, width: 20, height: 20 },
+            { x: 795, y: 130, width: 20, height: 20 },
+            { x: 995, y: 80, width: 20, height: 20 },
+            { x: 1195, y: 130, width: 20, height: 20 },
+            { x: 1395, y: 80, width: 20, height: 20 }
+        ],
+        goal: { x: 1400, y: 60, width: 40, height: 40 }
     },
     {
+        width: 1800, // 关卡5宽度
         platforms: [
-            { x: 0, y: 350, width: 800, height: 50 },
+            { x: 0, y: 350, width: 1800, height: 50 },
             { x: 100, y: 320, width: 85, height: 20 },
             { x: 250, y: 280, width: 85, height: 20 },
             { x: 400, y: 240, width: 85, height: 20 },
             { x: 550, y: 200, width: 85, height: 20 },
-            { x: 175, y: 160, width: 85, height: 20 },
-            { x: 325, y: 120, width: 85, height: 20 },
-            { x: 475, y: 80, width: 85, height: 20 },
-            { x: 125, y: 80, width: 85, height: 20 },
-            { x: 275, y: 40, width: 85, height: 20 }
+            { x: 700, y: 160, width: 85, height: 20 },
+            { x: 850, y: 120, width: 85, height: 20 },
+            { x: 1000, y: 80, width: 85, height: 20 },
+            { x: 1150, y: 120, width: 85, height: 20 },
+            { x: 1300, y: 80, width: 85, height: 20 },
+            { x: 1450, y: 40, width: 85, height: 20 }
         ],
-        goal: { x: 317, y: 0, width: 40, height: 40 }
+        spikes: [
+            { x: 175, y: 330, width: 30, height: 20 },
+            { x: 325, y: 330, width: 30, height: 20 },
+            { x: 475, y: 330, width: 30, height: 20 },
+            { x: 625, y: 330, width: 30, height: 20 },
+            { x: 775, y: 330, width: 30, height: 20 },
+            { x: 925, y: 330, width: 30, height: 20 },
+            { x: 1075, y: 330, width: 30, height: 20 },
+            { x: 1225, y: 330, width: 30, height: 20 },
+            { x: 1375, y: 330, width: 30, height: 20 },
+            { x: 1525, y: 330, width: 30, height: 20 }
+        ],
+        coins: [
+            { x: 142, y: 300, width: 20, height: 20 },
+            { x: 292, y: 260, width: 20, height: 20 },
+            { x: 442, y: 220, width: 20, height: 20 },
+            { x: 592, y: 180, width: 20, height: 20 },
+            { x: 742, y: 140, width: 20, height: 20 },
+            { x: 892, y: 100, width: 20, height: 20 },
+            { x: 1042, y: 60, width: 20, height: 20 },
+            { x: 1192, y: 100, width: 20, height: 20 },
+            { x: 1342, y: 60, width: 20, height: 20 },
+            { x: 1492, y: 20, width: 20, height: 20 }
+        ],
+        goal: { x: 1600, y: 0, width: 40, height: 40 }
     },
     {
+        width: 2000, // 关卡6宽度
         platforms: [
-            { x: 0, y: 350, width: 800, height: 50 },
+            { x: 0, y: 350, width: 2000, height: 50 },
             { x: 50, y: 310, width: 80, height: 20 },
             { x: 180, y: 270, width: 80, height: 20 },
             { x: 310, y: 230, width: 80, height: 20 },
             { x: 440, y: 190, width: 80, height: 20 },
             { x: 570, y: 150, width: 80, height: 20 },
-            { x: 115, y: 150, width: 80, height: 20 },
-            { x: 245, y: 110, width: 80, height: 20 },
-            { x: 375, y: 70, width: 80, height: 20 },
-            { x: 505, y: 30, width: 80, height: 20 }
+            { x: 700, y: 190, width: 80, height: 20 },
+            { x: 830, y: 150, width: 80, height: 20 },
+            { x: 960, y: 110, width: 80, height: 20 },
+            { x: 1090, y: 70, width: 80, height: 20 },
+            { x: 1220, y: 110, width: 80, height: 20 },
+            { x: 1350, y: 70, width: 80, height: 20 },
+            { x: 1480, y: 30, width: 80, height: 20 }
         ],
-        goal: { x: 545, y: -10, width: 40, height: 40 }
+        spikes: [
+            { x: 115, y: 330, width: 30, height: 20 },
+            { x: 245, y: 330, width: 30, height: 20 },
+            { x: 375, y: 330, width: 30, height: 20 },
+            { x: 505, y: 330, width: 30, height: 20 },
+            { x: 635, y: 330, width: 30, height: 20 },
+            { x: 765, y: 330, width: 30, height: 20 },
+            { x: 895, y: 330, width: 30, height: 20 },
+            { x: 1025, y: 330, width: 30, height: 20 },
+            { x: 1155, y: 330, width: 30, height: 20 },
+            { x: 1285, y: 330, width: 30, height: 20 },
+            { x: 1415, y: 330, width: 30, height: 20 },
+            { x: 1545, y: 330, width: 30, height: 20 },
+            { x: 1675, y: 330, width: 30, height: 20 },
+            { x: 1805, y: 330, width: 30, height: 20 }
+        ],
+        coins: [
+            { x: 90, y: 290, width: 20, height: 20 },
+            { x: 220, y: 250, width: 20, height: 20 },
+            { x: 350, y: 210, width: 20, height: 20 },
+            { x: 480, y: 170, width: 20, height: 20 },
+            { x: 610, y: 130, width: 20, height: 20 },
+            { x: 740, y: 170, width: 20, height: 20 },
+            { x: 870, y: 130, width: 20, height: 20 },
+            { x: 1000, y: 90, width: 20, height: 20 },
+            { x: 1130, y: 50, width: 20, height: 20 },
+            { x: 1260, y: 90, width: 20, height: 20 },
+            { x: 1390, y: 50, width: 20, height: 20 },
+            { x: 1520, y: 10, width: 20, height: 20 }
+        ],
+        goal: { x: 1700, y: -10, width: 40, height: 40 }
     },
     {
+        width: 2200, // 关卡7宽度
         platforms: [
-            { x: 0, y: 350, width: 800, height: 50 },
+            { x: 0, y: 350, width: 2200, height: 50 },
             { x: 120, y: 320, width: 90, height: 20 },
             { x: 300, y: 290, width: 90, height: 20 },
             { x: 480, y: 260, width: 90, height: 20 },
             { x: 660, y: 230, width: 90, height: 20 },
-            { x: 60, y: 200, width: 90, height: 20 },
-            { x: 240, y: 170, width: 90, height: 20 },
-            { x: 420, y: 140, width: 90, height: 20 },
-            { x: 600, y: 110, width: 90, height: 20 },
-            { x: 150, y: 80, width: 90, height: 20 },
-            { x: 330, y: 50, width: 90, height: 20 }
+            { x: 840, y: 200, width: 90, height: 20 },
+            { x: 1020, y: 170, width: 90, height: 20 },
+            { x: 1200, y: 140, width: 90, height: 20 },
+            { x: 1380, y: 110, width: 90, height: 20 },
+            { x: 1560, y: 80, width: 90, height: 20 },
+            { x: 1740, y: 50, width: 90, height: 20 }
         ],
-        goal: { x: 375, y: 10, width: 40, height: 40 }
+        spikes: [
+            { x: 185, y: 330, width: 30, height: 20 },
+            { x: 365, y: 330, width: 30, height: 20 },
+            { x: 545, y: 330, width: 30, height: 20 },
+            { x: 725, y: 330, width: 30, height: 20 },
+            { x: 905, y: 330, width: 30, height: 20 },
+            { x: 1085, y: 330, width: 30, height: 20 },
+            { x: 1265, y: 330, width: 30, height: 20 },
+            { x: 1445, y: 330, width: 30, height: 20 },
+            { x: 1625, y: 330, width: 30, height: 20 },
+            { x: 1805, y: 330, width: 30, height: 20 },
+            { x: 1985, y: 330, width: 30, height: 20 }
+        ],
+        coins: [
+            { x: 165, y: 300, width: 20, height: 20 },
+            { x: 345, y: 270, width: 20, height: 20 },
+            { x: 525, y: 240, width: 20, height: 20 },
+            { x: 705, y: 210, width: 20, height: 20 },
+            { x: 885, y: 180, width: 20, height: 20 },
+            { x: 1065, y: 150, width: 20, height: 20 },
+            { x: 1245, y: 120, width: 20, height: 20 },
+            { x: 1425, y: 90, width: 20, height: 20 },
+            { x: 1605, y: 60, width: 20, height: 20 },
+            { x: 1785, y: 30, width: 20, height: 20 }
+        ],
+        goal: { x: 1900, y: 10, width: 40, height: 40 }
     },
     {
+        width: 2400, // 关卡8宽度
         platforms: [
-            { x: 0, y: 350, width: 800, height: 50 },
+            { x: 0, y: 350, width: 2400, height: 50 },
             { x: 80, y: 310, width: 85, height: 20 },
             { x: 220, y: 270, width: 85, height: 20 },
             { x: 360, y: 230, width: 85, height: 20 },
             { x: 500, y: 190, width: 85, height: 20 },
             { x: 640, y: 150, width: 85, height: 20 },
-            { x: 140, y: 150, width: 85, height: 20 },
-            { x: 280, y: 110, width: 85, height: 20 },
-            { x: 420, y: 70, width: 85, height: 20 },
-            { x: 560, y: 30, width: 85, height: 20 },
-            { x: 100, y: 70, width: 85, height: 20 }
+            { x: 780, y: 190, width: 85, height: 20 },
+            { x: 920, y: 150, width: 85, height: 20 },
+            { x: 1060, y: 110, width: 85, height: 20 },
+            { x: 1200, y: 70, width: 85, height: 20 },
+            { x: 1340, y: 110, width: 85, height: 20 },
+            { x: 1480, y: 70, width: 85, height: 20 },
+            { x: 1620, y: 30, width: 85, height: 20 },
+            { x: 1760, y: 70, width: 85, height: 20 }
         ],
-        goal: { x: 142, y: 30, width: 40, height: 40 }
+        spikes: [
+            { x: 145, y: 330, width: 30, height: 20 },
+            { x: 285, y: 330, width: 30, height: 20 },
+            { x: 425, y: 330, width: 30, height: 20 },
+            { x: 565, y: 330, width: 30, height: 20 },
+            { x: 705, y: 330, width: 30, height: 20 },
+            { x: 845, y: 330, width: 30, height: 20 },
+            { x: 985, y: 330, width: 30, height: 20 },
+            { x: 1125, y: 330, width: 30, height: 20 },
+            { x: 1265, y: 330, width: 30, height: 20 },
+            { x: 1405, y: 330, width: 30, height: 20 },
+            { x: 1545, y: 330, width: 30, height: 20 },
+            { x: 1685, y: 330, width: 30, height: 20 },
+            { x: 1825, y: 330, width: 30, height: 20 },
+            { x: 1965, y: 330, width: 30, height: 20 },
+            { x: 2105, y: 330, width: 30, height: 20 },
+            { x: 2245, y: 330, width: 30, height: 20 }
+        ],
+        coins: [
+            { x: 122, y: 290, width: 20, height: 20 },
+            { x: 262, y: 250, width: 20, height: 20 },
+            { x: 402, y: 210, width: 20, height: 20 },
+            { x: 542, y: 170, width: 20, height: 20 },
+            { x: 682, y: 130, width: 20, height: 20 },
+            { x: 822, y: 170, width: 20, height: 20 },
+            { x: 962, y: 130, width: 20, height: 20 },
+            { x: 1102, y: 90, width: 20, height: 20 },
+            { x: 1242, y: 50, width: 20, height: 20 },
+            { x: 1382, y: 90, width: 20, height: 20 },
+            { x: 1522, y: 50, width: 20, height: 20 },
+            { x: 1662, y: 10, width: 20, height: 20 },
+            { x: 1802, y: 50, width: 20, height: 20 }
+        ],
+        goal: { x: 2000, y: 30, width: 40, height: 40 }
     },
     {
+        width: 2600, // 关卡9宽度
         platforms: [
-            { x: 0, y: 350, width: 800, height: 50 },
+            { x: 0, y: 350, width: 2600, height: 50 },
             { x: 100, y: 320, width: 80, height: 20 },
             { x: 250, y: 290, width: 80, height: 20 },
             { x: 400, y: 260, width: 80, height: 20 },
             { x: 550, y: 230, width: 80, height: 20 },
             { x: 700, y: 200, width: 80, height: 20 },
-            { x: 50, y: 170, width: 80, height: 20 },
-            { x: 200, y: 140, width: 80, height: 20 },
-            { x: 350, y: 110, width: 80, height: 20 },
-            { x: 500, y: 80, width: 80, height: 20 },
-            { x: 650, y: 50, width: 80, height: 20 },
-            { x: 125, y: 110, width: 80, height: 20 }
+            { x: 850, y: 170, width: 80, height: 20 },
+            { x: 1000, y: 140, width: 80, height: 20 },
+            { x: 1150, y: 110, width: 80, height: 20 },
+            { x: 1300, y: 80, width: 80, height: 20 },
+            { x: 1450, y: 110, width: 80, height: 20 },
+            { x: 1600, y: 80, width: 80, height: 20 },
+            { x: 1750, y: 50, width: 80, height: 20 },
+            { x: 1900, y: 80, width: 80, height: 20 },
+            { x: 2050, y: 40, width: 80, height: 20 }
         ],
-        goal: { x: 165, y: 70, width: 40, height: 40 }
+        spikes: [
+            { x: 165, y: 330, width: 30, height: 20 },
+            { x: 315, y: 330, width: 30, height: 20 },
+            { x: 465, y: 330, width: 30, height: 20 },
+            { x: 615, y: 330, width: 30, height: 20 },
+            { x: 765, y: 330, width: 30, height: 20 },
+            { x: 915, y: 330, width: 30, height: 20 },
+            { x: 1065, y: 330, width: 30, height: 20 },
+            { x: 1215, y: 330, width: 30, height: 20 },
+            { x: 1365, y: 330, width: 30, height: 20 },
+            { x: 1515, y: 330, width: 30, height: 20 },
+            { x: 1665, y: 330, width: 30, height: 20 },
+            { x: 1815, y: 330, width: 30, height: 20 },
+            { x: 1965, y: 330, width: 30, height: 20 },
+            { x: 2115, y: 330, width: 30, height: 20 },
+            { x: 2265, y: 330, width: 30, height: 20 },
+            { x: 2415, y: 330, width: 30, height: 20 }
+        ],
+        coins: [
+            { x: 140, y: 300, width: 20, height: 20 },
+            { x: 290, y: 270, width: 20, height: 20 },
+            { x: 440, y: 240, width: 20, height: 20 },
+            { x: 590, y: 210, width: 20, height: 20 },
+            { x: 740, y: 180, width: 20, height: 20 },
+            { x: 890, y: 150, width: 20, height: 20 },
+            { x: 1040, y: 120, width: 20, height: 20 },
+            { x: 1190, y: 90, width: 20, height: 20 },
+            { x: 1340, y: 60, width: 20, height: 20 },
+            { x: 1490, y: 90, width: 20, height: 20 },
+            { x: 1640, y: 60, width: 20, height: 20 },
+            { x: 1790, y: 30, width: 20, height: 20 },
+            { x: 1940, y: 60, width: 20, height: 20 },
+            { x: 2090, y: 20, width: 20, height: 20 }
+        ],
+        goal: { x: 2200, y: 0, width: 40, height: 40 }
     },
     {
+        width: 2800, // 关卡10宽度
         platforms: [
-            { x: 0, y: 350, width: 800, height: 50 },
+            { x: 0, y: 350, width: 2800, height: 50 },
             { x: 120, y: 310, width: 90, height: 20 },
             { x: 270, y: 270, width: 90, height: 20 },
             { x: 420, y: 230, width: 90, height: 20 },
             { x: 570, y: 190, width: 90, height: 20 },
             { x: 720, y: 150, width: 90, height: 20 },
-            { x: 60, y: 150, width: 90, height: 20 },
-            { x: 210, y: 110, width: 90, height: 20 },
-            { x: 360, y: 70, width: 90, height: 20 },
-            { x: 510, y: 30, width: 90, height: 20 },
-            { x: 135, y: 70, width: 90, height: 20 },
-            { x: 285, y: 30, width: 90, height: 20 }
+            { x: 870, y: 190, width: 90, height: 20 },
+            { x: 1020, y: 150, width: 90, height: 20 },
+            { x: 1170, y: 110, width: 90, height: 20 },
+            { x: 1320, y: 70, width: 90, height: 20 },
+            { x: 1470, y: 110, width: 90, height: 20 },
+            { x: 1620, y: 70, width: 90, height: 20 },
+            { x: 1770, y: 30, width: 90, height: 20 },
+            { x: 1920, y: 70, width: 90, height: 20 },
+            { x: 2070, y: 30, width: 90, height: 20 },
+            { x: 2220, y: 70, width: 90, height: 20 }
         ],
-        goal: { x: 330, y: -10, width: 40, height: 40 }
+        spikes: [
+            { x: 185, y: 330, width: 30, height: 20 },
+            { x: 335, y: 330, width: 30, height: 20 },
+            { x: 485, y: 330, width: 30, height: 20 },
+            { x: 635, y: 330, width: 30, height: 20 },
+            { x: 785, y: 330, width: 30, height: 20 },
+            { x: 935, y: 330, width: 30, height: 20 },
+            { x: 1085, y: 330, width: 30, height: 20 },
+            { x: 1235, y: 330, width: 30, height: 20 },
+            { x: 1385, y: 330, width: 30, height: 20 },
+            { x: 1535, y: 330, width: 30, height: 20 },
+            { x: 1685, y: 330, width: 30, height: 20 },
+            { x: 1835, y: 330, width: 30, height: 20 },
+            { x: 1985, y: 330, width: 30, height: 20 },
+            { x: 2135, y: 330, width: 30, height: 20 },
+            { x: 2285, y: 330, width: 30, height: 20 },
+            { x: 2435, y: 330, width: 30, height: 20 },
+            { x: 2585, y: 330, width: 30, height: 20 }
+        ],
+        coins: [
+            { x: 165, y: 290, width: 20, height: 20 },
+            { x: 315, y: 250, width: 20, height: 20 },
+            { x: 465, y: 210, width: 20, height: 20 },
+            { x: 615, y: 170, width: 20, height: 20 },
+            { x: 765, y: 130, width: 20, height: 20 },
+            { x: 915, y: 170, width: 20, height: 20 },
+            { x: 1065, y: 130, width: 20, height: 20 },
+            { x: 1215, y: 90, width: 20, height: 20 },
+            { x: 1365, y: 50, width: 20, height: 20 },
+            { x: 1515, y: 90, width: 20, height: 20 },
+            { x: 1665, y: 50, width: 20, height: 20 },
+            { x: 1815, y: 10, width: 20, height: 20 },
+            { x: 1965, y: 50, width: 20, height: 20 },
+            { x: 2115, y: 10, width: 20, height: 20 },
+            { x: 2265, y: 50, width: 20, height: 20 }
+        ],
+        goal: { x: 2400, y: 30, width: 40, height: 40 }
     }
 ];
 
@@ -258,47 +548,32 @@ let currentLevelData = levels[0];
 
 // 事件监听
 window.addEventListener('keydown', (e) => {
-    if (e.key === 'w') keys.w = true;
-    if (e.key === 'a') keys.a = true;
-    if (e.key === 's') keys.s = true;
-    if (e.key === 'd') keys.d = true;
-    if (e.key === 'j') {
+    const key = e.key.toLowerCase();
+    if (key === 'w') keys.w = true;
+    if (key === 'a') keys.a = true;
+    if (key === 's') keys.s = true;
+    if (key === 'd') keys.d = true;
+    if (key === 'j') {
         keys.j = true;
         attack();
     }
-    if (e.key === 'i') {
+    if (key === 'i') {
         keys.i = true;
         switchWeapon();
     }
 });
 
 window.addEventListener('keyup', (e) => {
-    if (e.key === 'w') keys.w = false;
-    if (e.key === 'a') keys.a = false;
-    if (e.key === 's') keys.s = false;
-    if (e.key === 'd') keys.d = false;
-    if (e.key === 'j') keys.j = false;
-    if (e.key === 'i') keys.i = false;
+    const key = e.key.toLowerCase();
+    if (key === 'w') keys.w = false;
+    if (key === 'a') keys.a = false;
+    if (key === 's') keys.s = false;
+    if (key === 'd') keys.d = false;
+    if (key === 'j') keys.j = false;
+    if (key === 'i') keys.i = false;
 });
 
-// 界面切换函数
-function showScreen(screen) {
-    // 隐藏所有屏幕和弹窗
-    startScreen.classList.remove('active');
-    levelSelect.classList.remove('active');
-    gameScreen.classList.remove('active');
-    winPopup.classList.remove('active');
-    allLevelsCompletePopup.classList.remove('active');
-    gameOverPopup.classList.remove('active');
-    
-    // 显示目标屏幕
-    screen.classList.add('active');
-    
-    // 如果显示的是关卡选择界面，更新关卡状态
-    if (screen === levelSelect) {
-        updateLevelSelect();
-    }
-}
+
 
 // 更新关卡选择界面
 function updateLevelSelect() {
@@ -329,10 +604,208 @@ function updateLevelSelect() {
     });
 }
 
+// 更新换装界面
+function updateCustomizeScreen() {
+    // 更新预览角色
+    if (previewCharacter) {
+        // 清空预览区域
+        previewCharacter.innerHTML = '';
+        
+        // 创建canvas元素用于绘制放大的角色
+        const canvas = document.createElement('canvas');
+        canvas.width = 300;
+        canvas.height = 300;
+        previewCharacter.appendChild(canvas);
+        
+        const ctx = canvas.getContext('2d');
+        
+        // 绘制放大的角色（使用预览皮肤）
+        drawLargeCharacter(ctx, previewSkin);
+        
+        // 添加购买按钮
+        const buyButton = document.createElement('button');
+        buyButton.id = 'buySkinButton';
+        buyButton.className = 'buy-btn';
+        buyButton.style.display = 'none';
+        previewCharacter.appendChild(buyButton);
+        
+        // 重新设置购买按钮事件
+        setupBuyButtonEvent();
+    }
+    
+    // 更新金币显示
+    if (customizeCoinCount) {
+        customizeCoinCount.textContent = coins;
+    }
+    
+    // 确保所有已拥有的皮肤都在"我的"栏目中
+    updateMyCollection();
+    
+    // 更新皮肤项目状态
+    const skinItems = document.querySelectorAll('.skin-item');
+    skinItems.forEach(item => {
+        const skin = item.dataset.skin;
+        const isCustomSkin = item.classList.contains('custom-skin-item');
+        const isOwned = isCustomSkin ? !!customSkin : (skin ? ownedSkins.includes(skin) : false);
+        const isCurrent = isCustomSkin ? currentSkin === 'custom' : (skin ? skin === currentSkin : false);
+        
+        // 移除所有状态类
+        item.classList.remove('active', 'locked');
+        
+        // 添加相应状态类
+        if (isCurrent) {
+            item.classList.add('active');
+        } else if (!isOwned && skin && skinData[skin].price > 0) {
+            item.classList.add('locked');
+        }
+        
+        // 更新状态文本
+        const statusElement = item.querySelector('.skin-status');
+        const priceElement = item.querySelector('.skin-price');
+        
+        if (isCustomSkin) {
+            if (isCurrent) {
+                if (statusElement) statusElement.textContent = '当前';
+            } else if (isOwned) {
+                if (statusElement) statusElement.textContent = '已拥有';
+            } else {
+                if (statusElement) statusElement.textContent = '上传';
+            }
+            if (priceElement) priceElement.style.display = 'none';
+        } else if (isCurrent) {
+            if (statusElement) statusElement.textContent = '当前';
+            if (priceElement) priceElement.style.display = 'none';
+        } else if (isOwned) {
+            if (statusElement) statusElement.textContent = '已拥有';
+            if (priceElement) priceElement.style.display = 'none';
+        } else {
+            if (statusElement) statusElement.style.display = 'none';
+            if (priceElement) priceElement.style.display = 'block';
+        }
+    });
+    
+    // 更新购买按钮状态
+    updateBuyButton();
+}
+
+// 更新"我的"栏目中的皮肤
+function updateMyCollection() {
+    const myTab = document.getElementById('my-tab');
+    const mySkinGrid = myTab.querySelector('.skin-grid');
+    if (!mySkinGrid) return;
+    
+    // 保存自定义皮肤上传区域
+    const customSkinItem = mySkinGrid.querySelector('.custom-skin-item');
+    
+    // 清除现有的皮肤项（保留小蜜蜂默认皮肤和自定义皮肤上传区域）
+    const existingSkinItems = mySkinGrid.querySelectorAll('.skin-item:not([data-skin="bee"]):not(.custom-skin-item)');
+    existingSkinItems.forEach(item => item.remove());
+    
+    // 确保自定义皮肤上传区域存在
+    if (!customSkinItem) {
+        const newCustomSkinItem = document.createElement('div');
+        newCustomSkinItem.className = 'skin-item custom-skin-item';
+        
+        // 检查是否已有自定义皮肤
+        let customSkinHtml = '';
+        if (customSkin) {
+            // 显示自定义皮肤缩略图
+            customSkinHtml = `
+                <div class="custom-skin-upload">
+                    <input type="file" id="customSkinUpload" accept="image/*" style="display: none;">
+                    <label for="customSkinUpload" class="custom-skin-label">
+                        <img src="${customSkin.src}" class="custom-skin-thumbnail" alt="${customSkinName}">
+                        <span>${customSkinName}</span>
+                        <div class="skin-status">已拥有</div>
+                    </label>
+                </div>
+            `;
+        } else {
+            // 显示上传按钮
+            customSkinHtml = `
+                <div class="custom-skin-upload">
+                    <input type="file" id="customSkinUpload" accept="image/*" style="display: none;">
+                    <label for="customSkinUpload" class="custom-skin-label">
+                        <div class="custom-skin-icon">
+                            <div class="upload-icon">+</div>
+                        </div>
+                        <span>自定义</span>
+                        <div class="skin-status">上传</div>
+                    </label>
+                </div>
+            `;
+        }
+        
+        newCustomSkinItem.innerHTML = customSkinHtml;
+        mySkinGrid.appendChild(newCustomSkinItem);
+        // 重新绑定自定义皮肤上传事件
+        bindCustomSkinUploadEvent();
+    } else {
+        // 更新自定义皮肤显示
+        if (customSkin) {
+            const customSkinLabel = customSkinItem.querySelector('.custom-skin-label');
+            if (customSkinLabel) {
+                customSkinLabel.innerHTML = `
+                    <img src="${customSkin.src}" class="custom-skin-thumbnail" alt="${customSkinName}">
+                    <span>${customSkinName}</span>
+                    <div class="skin-status">已拥有</div>
+                `;
+            }
+        }
+    }
+    
+    // 添加所有已拥有的皮肤
+    ownedSkins.forEach(skin => {
+        if (skin !== 'bee') { // 小蜜蜂默认皮肤已经存在
+            // 检查是否已经存在
+            const existingItem = mySkinGrid.querySelector(`.skin-item[data-skin="${skin}"]`);
+            if (!existingItem) {
+                const newSkinItem = document.createElement('div');
+                newSkinItem.className = 'skin-item';
+                newSkinItem.dataset.skin = skin;
+                newSkinItem.innerHTML = `
+                    <div class="skin-icon ${skin}"></div>
+                    <span>${skinData[skin].name}</span>
+                    <div class="skin-status">已拥有</div>
+                `;
+                mySkinGrid.appendChild(newSkinItem);
+            }
+        }
+    });
+    
+    // 更新商城栏目，移除已拥有的皮肤
+    const shopTab = document.getElementById('shop-tab');
+    const shopSkinGrid = shopTab.querySelector('.skin-grid');
+    if (shopSkinGrid) {
+        const shopSkinItems = shopSkinGrid.querySelectorAll('.skin-item');
+        shopSkinItems.forEach(item => {
+            const skin = item.dataset.skin;
+            if (ownedSkins.includes(skin)) {
+                item.remove();
+            }
+        });
+    }
+    
+    // 重新绑定事件
+    bindSkinItemEvents();
+}
+
 // 初始化游戏
 function initGame(level) {
+    // 确保level参数有效
+    if (!level || level < 1 || level > levels.length) {
+        console.error('无效的关卡编号:', level);
+        return;
+    }
+    
     currentLevel = level;
     currentLevelData = levels[level - 1];
+    
+    // 确保关卡数据存在
+    if (!currentLevelData) {
+        console.error('关卡数据不存在:', level);
+        return;
+    }
     
     // 重置角色位置
     player.x = 100;
@@ -387,57 +860,295 @@ function drawPlayer() {
         ctx.globalAlpha = 1;
     }
     
-    // 绘制蜜蜂身体
-    ctx.fillStyle = '#FFD700';
-    ctx.beginPath();
-    ctx.ellipse(player.x + player.width/2, player.y + player.height/2, player.width/2, player.height/2, 0, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // 绘制蜜蜂条纹
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(player.x + player.width/4, player.y, player.width/2, player.height/5);
-    ctx.fillRect(player.x + player.width/4, player.y + player.height*3/5, player.width/2, player.height/5);
-    
-    // 绘制眼睛
-    ctx.fillStyle = '#FFFFFF';
-    if (player.direction === 'right') {
-        ctx.beginPath();
-        ctx.arc(player.x + player.width*3/4, player.y + player.height/3, 6, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // 绘制瞳孔
-        ctx.fillStyle = '#000000';
-        ctx.beginPath();
-        ctx.arc(player.x + player.width*3/4, player.y + player.height/3, 3, 0, Math.PI * 2);
-        ctx.fill();
-    } else {
-        ctx.beginPath();
-        ctx.arc(player.x + player.width/4, player.y + player.height/3, 6, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // 绘制瞳孔
-        ctx.fillStyle = '#000000';
-        ctx.beginPath();
-        ctx.arc(player.x + player.width/4, player.y + player.height/3, 3, 0, Math.PI * 2);
-        ctx.fill();
+    // 水平翻转当角色面向左侧
+    if (player.direction === 'left') {
+        ctx.translate(player.x + player.width, 0);
+        ctx.scale(-1, 1);
+        ctx.translate(-player.x, 0);
     }
     
-    // 绘制触角
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(player.x + player.width/2, player.y);
-    ctx.lineTo(player.x + player.width/2 - 5, player.y - 10);
-    ctx.moveTo(player.x + player.width/2, player.y);
-    ctx.lineTo(player.x + player.width/2 + 5, player.y - 10);
-    ctx.stroke();
+    // 根据当前皮肤绘制角色
+    drawCharacter(ctx, player.x, player.y, player.width, player.height, currentSkin);
     
-    // 绘制翅膀
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.restore();
+}
+
+// 绘制角色的通用函数
+function drawCharacter(ctx, x, y, width, height, skin) {
+    if (skin === 'custom' && customSkin) {
+        // 绘制自定义皮肤
+        ctx.drawImage(customSkin, x, y, width, height);
+        return;
+    }
+    
+    switch (skin) {
+        case 'bee':
+            // 绘制蜜蜂身体
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.ellipse(x + width/2, y + height/2, width/2, height/2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 绘制蜜蜂条纹
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(x + width/4, y, width/2, height/5);
+            ctx.fillRect(x + width/4, y + height*3/5, width/2, height/5);
+            
+            // 绘制眼睛（始终在右侧，因为翻转后会自动到左侧）
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(x + width*3/4, y + height/3, 6, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 绘制瞳孔
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.arc(x + width*3/4, y + height/3, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 绘制触角
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x + width/2, y);
+            ctx.lineTo(x + width/2 - 5, y - 10);
+            ctx.moveTo(x + width/2, y);
+            ctx.lineTo(x + width/2 + 5, y - 10);
+            ctx.stroke();
+            
+            // 绘制翅膀
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.beginPath();
+            ctx.ellipse(x + width/4, y + height/2, width/3, height/2, Math.PI/4, 0, Math.PI * 2);
+            ctx.ellipse(x + width*3/4, y + height/2, width/3, height/2, -Math.PI/4, 0, Math.PI * 2);
+            ctx.fill();
+            break;
+        
+        case 'orange':
+            // 绘制橙子身体
+            ctx.fillStyle = '#FF8C00';
+            ctx.beginPath();
+            ctx.ellipse(x + width/2, y + height/2, width/2, height/2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 绘制橙子纹理
+            ctx.fillStyle = '#FF6347';
+            for (let i = 0; i < 8; i++) {
+                const angle = (Math.PI * 2 / 8) * i;
+                const px = x + width/2 + Math.cos(angle) * width/4;
+                const py = y + height/2 + Math.sin(angle) * height/4;
+                ctx.beginPath();
+                ctx.arc(px, py, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // 绘制眼睛
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(x + width*3/4, y + height/3, 6, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 绘制瞳孔
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.arc(x + width*3/4, y + height/3, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 绘制叶子
+            ctx.fillStyle = '#008000';
+            ctx.beginPath();
+            ctx.moveTo(x + width/2, y);
+            ctx.lineTo(x + width/2 - 10, y - 15);
+            ctx.lineTo(x + width/2 + 10, y - 15);
+            ctx.closePath();
+            ctx.fill();
+            break;
+        
+        case 'apple':
+            // 绘制苹果身体
+            ctx.fillStyle = '#FF0000';
+            ctx.beginPath();
+            ctx.ellipse(x + width/2, y + height/2, width/2, height/2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 绘制苹果纹理
+            ctx.fillStyle = '#CC0000';
+            for (let i = 0; i < 6; i++) {
+                const angle = (Math.PI * 2 / 6) * i;
+                const px = x + width/2 + Math.cos(angle) * width/4;
+                const py = y + height/2 + Math.sin(angle) * height/4;
+                ctx.beginPath();
+                ctx.arc(px, py, 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // 绘制眼睛
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(x + width*3/4, y + height/3, 6, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 绘制瞳孔
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.arc(x + width*3/4, y + height/3, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 绘制叶子
+            ctx.fillStyle = '#008000';
+            ctx.beginPath();
+            ctx.moveTo(x + width/2, y);
+            ctx.lineTo(x + width/2 - 8, y - 12);
+            ctx.lineTo(x + width/2 + 8, y - 12);
+            ctx.closePath();
+            ctx.fill();
+            
+            // 绘制茎
+            ctx.strokeStyle = '#8B4513';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x + width/2, y);
+            ctx.lineTo(x + width/2, y - 8);
+            ctx.stroke();
+            break;
+        
+        case 'butterfly':
+            // 绘制蝴蝶身体
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(x + width*2/5, y + height/3, width/5, height/3);
+            
+            // 绘制蝴蝶头部
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.arc(x + width*2/5, y + height/2, width/10, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 绘制蝴蝶触角
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x + width*2/5, y + height/2);
+            ctx.lineTo(x + width*1/5, y + height/4);
+            ctx.moveTo(x + width*2/5, y + height/2);
+            ctx.lineTo(x + width*3/5, y + height/4);
+            ctx.stroke();
+            
+            // 绘制蝴蝶翅膀
+            ctx.fillStyle = '#FF69B4';
+            ctx.beginPath();
+            ctx.ellipse(x + width/4, y + height/2, width/3, height/2, Math.PI/4, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#FF1493';
+            ctx.beginPath();
+            ctx.ellipse(x + width*3/4, y + height/2, width/3, height/2, -Math.PI/4, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 绘制眼睛
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(x + width*2/5, y + height*3/7, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 绘制瞳孔
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(x + width*2/5, y + height*4/7, 3, 0, Math.PI * 2);
+            ctx.fill();
+            break;
+        
+        case 'pineapple':
+            // 绘制菠萝身体
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.ellipse(x + width/2, y + height/2, width/2, height/2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 绘制菠萝纹理
+            ctx.fillStyle = '#FFA500';
+            for (let i = 0; i < 8; i++) {
+                const angle = (Math.PI * 2 / 8) * i;
+                const px = x + width/2 + Math.cos(angle) * width/4;
+                const py = y + height/2 + Math.sin(angle) * height/4;
+                ctx.beginPath();
+                ctx.arc(px, py, 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // 绘制眼睛
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(x + width*3/4, y + height/3, 6, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 绘制瞳孔
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.arc(x + width*3/4, y + height/3, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 绘制菠萝叶子
+            ctx.fillStyle = '#008000';
+            ctx.beginPath();
+            ctx.moveTo(x + width/2, y);
+            ctx.lineTo(x + width/2 - 15, y - 20);
+            ctx.lineTo(x + width/2 + 15, y - 20);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.fillStyle = '#228B22';
+            ctx.beginPath();
+            ctx.moveTo(x + width/2, y - 10);
+            ctx.lineTo(x + width/2 - 10, y - 25);
+            ctx.lineTo(x + width/2 + 10, y - 25);
+            ctx.closePath();
+            ctx.fill();
+            break;
+    }
+}
+
+// 绘制放大的角色用于预览
+function drawLargeCharacter(ctx, skin) {
+    // 绘制放大的角色
+    const x = 50;
+    const y = 50;
+    const width = 200;
+    const height = 200;
+    
+    // 绘制圣光保护效果（模拟无敌状态）
+    const alpha = 0.5 + Math.sin(Date.now() * 0.005) * 0.3;
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = '#FFFF00';
     ctx.beginPath();
-    ctx.ellipse(player.x + player.width/4, player.y + player.height/2, player.width/3, player.height/2, Math.PI/4, 0, Math.PI * 2);
-    ctx.ellipse(player.x + player.width*3/4, player.y + player.height/2, player.width/3, player.height/2, -Math.PI/4, 0, Math.PI * 2);
+    ctx.arc(x + width/2, y + height/2, width/2 + 10, 0, Math.PI * 2);
     ctx.fill();
+    ctx.globalAlpha = 1;
+    
+    // 水平翻转当角色面向左侧（默认右侧）
+    ctx.save();
+    
+    // 根据当前皮肤绘制角色
+    drawCharacter(ctx, x, y, width, height, skin);
+    
+    // 绘制武器
+    ctx.save();
+    
+    // 应用水平翻转当角色面向左侧
+    ctx.translate(x + width, 0);
+    ctx.scale(-1, 1);
+    ctx.translate(-x, 0);
+    
+    // 绘制长刀
+    ctx.fillStyle = '#C0C0C0';
+    ctx.fillRect(x + width - 5, y + height/2 - 4, 30, 8);
+    ctx.beginPath();
+    ctx.moveTo(x + width - 5 + 30, y + height/2 - 4);
+    ctx.lineTo(x + width - 5 + 40, y + height/2);
+    ctx.lineTo(x + width - 5 + 30, y + height/2 + 4);
+    ctx.closePath();
+    ctx.fill();
+    
+    ctx.restore();
     
     ctx.restore();
 }
@@ -478,27 +1189,29 @@ function attack() {
         attackAnimation = 1;
         
         // 长刀攻击（近战）
-        enemies.forEach(enemy => {
+        for (let i = enemies.length - 1; i >= 0; i--) {
+            const enemy = enemies[i];
             const distance = Math.sqrt(
                 Math.pow(enemy.x - (player.x + player.width/2), 2) +
                 Math.pow(enemy.y - (player.y + player.height/2), 2)
             );
             
             if (distance < weapons.sword.range) {
-                enemy.health = 0; // 直接消除敌人
+                // 直接从数组中移除敌人
+                enemies.splice(i, 1);
             }
-        });
+        }
     } else if (currentWeapon === 'staff') {
         // 法杖攻击（远程）
         projectiles.push({
             x: player.x + player.width/2,
             y: player.y + player.height/2,
-            velocityX: player.direction === 'right' ? 10 : -10,
+            velocityX: player.direction === 'right' ? 8 : -8,
             velocityY: 0,
-            width: 10,
-            height: 10,
+            width: 15,
+            height: 15,
             damage: weapons.staff.damage,
-            lifetime: 60
+            lifetime: 200
         });
     }
 }
@@ -508,65 +1221,97 @@ function drawWeapon() {
     ctx.save();
     
     if (currentWeapon === 'sword') {
-        // 攻击动画（正常攻击动作，不旋转）
-        let swordX, swordY;
+        // 攻击动画（挥砍效果）
+        let swordX, swordY, rotation = 0;
         if (player.direction === 'right') {
             if (attackAnimation > 0) {
-                // 攻击时的位置
-                swordX = player.x + player.width - 5;
-                swordY = player.y + player.height/2 - 10;
+                // 攻击时的位置和旋转
+                const attackProgress = 1 - attackAnimation;
+                if (attackProgress < 0.5) {
+                    // 挥砍动作
+                    swordX = player.x + player.width - 5;
+                    swordY = player.y + player.height/2 - 5;
+                    rotation = 0 + attackProgress * Math.PI * 0.8; // 从0度开始挥砍
+                } else {
+                    // 收刀动作
+                    swordX = player.x + player.width - 5;
+                    swordY = player.y + player.height/2 - 5;
+                    rotation = 0 + (1 - attackProgress) * Math.PI * 0.8; // 回到0度
+                }
             } else {
-                // 正常位置 - 放在右手边
+                // 正常位置 - 水平向右，刀尖在外
                 swordX = player.x + player.width - 5;
                 swordY = player.y + player.height/2 - 4;
+                rotation = 0; // 0度（水平向右）
             }
-            
-            // 绘制长刀
-            ctx.fillStyle = '#C0C0C0';
-            ctx.fillRect(swordX, swordY, 30, 8);
-            ctx.beginPath();
-            ctx.moveTo(swordX + 30, swordY);
-            ctx.lineTo(swordX + 40, swordY + 4);
-            ctx.lineTo(swordX + 30, swordY + 8);
-            ctx.closePath();
-            ctx.fill();
         } else {
+            // 左侧方向：使用与右侧相同的位置计算，但通过翻转实现镜像效果
             if (attackAnimation > 0) {
-                // 攻击时的位置
-                swordX = player.x - 25;
-                swordY = player.y + player.height/2 - 10;
+                // 攻击时的位置和旋转
+                const attackProgress = 1 - attackAnimation;
+                if (attackProgress < 0.5) {
+                    // 挥砍动作
+                    swordX = player.x + player.width - 5;
+                    swordY = player.y + player.height/2 - 5;
+                    rotation = 0 + attackProgress * Math.PI * 0.8; // 与右侧相同的旋转
+                } else {
+                    // 收刀动作
+                    swordX = player.x + player.width - 5;
+                    swordY = player.y + player.height/2 - 5;
+                    rotation = 0 + (1 - attackProgress) * Math.PI * 0.8; // 与右侧相同的旋转
+                }
             } else {
-                // 正常位置 - 放在左手边
-                swordX = player.x - 20;
+                // 正常位置
+                swordX = player.x + player.width - 5;
                 swordY = player.y + player.height/2 - 4;
+                rotation = 0; // 与右侧相同的旋转
             }
-            
-            // 绘制长刀
-            ctx.fillStyle = '#C0C0C0';
-            ctx.fillRect(swordX, swordY, 30, 8);
-            ctx.beginPath();
-            ctx.moveTo(swordX, swordY);
-            ctx.lineTo(swordX - 10, swordY + 4);
-            ctx.lineTo(swordX, swordY + 8);
-            ctx.closePath();
-            ctx.fill();
         }
+        
+        // 绘制长刀
+        ctx.save();
+        
+        // 应用水平翻转当角色面向左侧
+        if (player.direction === 'left') {
+            ctx.translate(player.x + player.width, 0);
+            ctx.scale(-1, 1);
+            ctx.translate(-player.x, 0);
+        }
+        
+        // 以靠近人物主体的长刀边缘为旋转轴
+        ctx.translate(swordX, swordY + 4);
+        ctx.rotate(rotation);
+        ctx.fillStyle = '#C0C0C0';
+        
+        // 统一绘制方式，通过翻转实现镜像
+        ctx.fillRect(0, -4, 30, 8);
+        ctx.beginPath();
+        ctx.moveTo(30, -4);
+        ctx.lineTo(40, 0);
+        ctx.lineTo(30, 4);
+        ctx.closePath();
+        ctx.fill();
+        
+        ctx.restore();
     } else if (currentWeapon === 'staff') {
-        // 绘制法杖（根据方向调整）
-        if (player.direction === 'right') {
-            ctx.fillStyle = '#8B4513';
-            ctx.fillRect(player.x + player.width - 10, player.y + player.height/2 - 15, 5, 30);
-            ctx.fillStyle = '#4B0082';
-            ctx.beginPath();
-            ctx.arc(player.x + player.width - 7, player.y + player.height/2 - 20, 8, 0, Math.PI * 2);
-            ctx.fill();
-        } else {
-            ctx.fillStyle = '#8B4513';
-            ctx.fillRect(player.x - 5, player.y + player.height/2 - 15, 5, 30);
-            ctx.fillStyle = '#4B0082';
-            ctx.beginPath();
-            ctx.arc(player.x - 2, player.y + player.height/2 - 20, 8, 0, Math.PI * 2);
-            ctx.fill();
+        // 应用水平翻转当角色面向左侧
+        if (player.direction === 'left') {
+            ctx.save();
+            ctx.translate(player.x + player.width, 0);
+            ctx.scale(-1, 1);
+            ctx.translate(-player.x, 0);
+        }
+        
+        // 统一绘制方式，通过翻转实现镜像
+        ctx.fillStyle = '#8B4513';
+        ctx.fillRect(player.x + player.width - 10, player.y + player.height/2 - 15, 5, 30);
+        ctx.fillStyle = '#4B0082';
+        ctx.beginPath();
+        ctx.arc(player.x + player.width - 7, player.y + player.height/2 - 20, 8, 0, Math.PI * 2);
+        ctx.fill();
+        
+        if (player.direction === 'left') {
+            ctx.restore();
         }
     }
     
@@ -634,9 +1379,11 @@ function spawnEnemies() {
     initialEnemyCount = enemyCount;
     
     for (let i = 0; i < enemyCount; i++) {
+        // 确保currentLevelData存在并且有width属性
+        const maxX = currentLevelData && currentLevelData.width ? currentLevelData.width - 100 : 700;
         enemies.push({
-            x: 200 + i * 150,
-            y: 300,
+            x: Math.min(300 + i * 120, maxX), // 确保在关卡范围内
+            y: 250, // 调整位置，确保在平台上
             width: 30,
             height: 30,
             velocityX: Math.random() > 0.5 ? 1 : -1,
@@ -645,8 +1392,59 @@ function spawnEnemies() {
     }
 }
 
+// 绘制尖刺
+function drawSpikes() {
+    if (currentLevelData && currentLevelData.spikes && Array.isArray(currentLevelData.spikes)) {
+        currentLevelData.spikes.forEach(spike => {
+            if (spike && typeof spike === 'object') {
+                ctx.fillStyle = '#808080';
+                ctx.fillRect(spike.x, spike.y, spike.width, spike.height);
+                
+                // 绘制尖刺的尖顶
+                ctx.fillStyle = '#FF0000';
+                ctx.beginPath();
+                ctx.moveTo(spike.x, spike.y);
+                ctx.lineTo(spike.x + spike.width/2, spike.y - 10);
+                ctx.lineTo(spike.x + spike.width, spike.y);
+                ctx.closePath();
+                ctx.fill();
+            }
+        });
+    }
+}
+
+// 绘制金币
+function drawCoins() {
+    if (currentLevelData && currentLevelData.coins && Array.isArray(currentLevelData.coins)) {
+        currentLevelData.coins.forEach(coin => {
+            if (coin && typeof coin === 'object') {
+                // 绘制金币主体
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.arc(coin.x + coin.width/2, coin.y + coin.height/2, coin.width/2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 绘制金币的高光
+                ctx.fillStyle = '#FFFF00';
+                ctx.beginPath();
+                ctx.arc(coin.x + coin.width/3, coin.y + coin.height/3, coin.width/6, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 绘制金币的边缘
+                ctx.strokeStyle = '#FFA500';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(coin.x + coin.width/2, coin.y + coin.height/2, coin.width/2, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+        });
+    }
+}
+
 // 绘制目标
 function drawGoal() {
+    if (!currentLevelData || !currentLevelData.goal) return;
+    
     const goal = currentLevelData.goal;
     const centerX = goal.x + goal.width/2;
     const centerY = goal.y + goal.height/2;
@@ -722,8 +1520,27 @@ function drawCompletionAnimation() {
     ctx.restore();
 }
 
+// 更新相机位置
+function updateCamera() {
+    // 相机跟随玩家，保持玩家在屏幕中央
+    camera.x = player.x - camera.width / 2 + player.width / 2;
+    
+    // 限制相机边界，确保不会超出关卡范围
+    if (camera.x < 0) {
+        camera.x = 0;
+    }
+    if (currentLevelData && currentLevelData.width) {
+        if (camera.x > currentLevelData.width - camera.width) {
+            camera.x = currentLevelData.width - camera.width;
+        }
+    }
+}
+
 // 更新游戏状态
 function update() {
+    // 检查是否在游戏界面，不在游戏界面时不执行游戏逻辑
+    if (!gameScreen.classList.contains('active')) return;
+    
     if (gameOver || levelComplete) return;
     
     // 应用重力
@@ -769,42 +1586,56 @@ function update() {
     
     // 边界检测
     if (player.x < 0) player.x = 0;
-    if (player.x > canvas.width - player.width) player.x = canvas.width - player.width;
+    if (player.x > currentLevelData.width - player.width) player.x = currentLevelData.width - player.width;
     if (player.y > canvas.height - player.height) {
         player.y = canvas.height - player.height;
         player.isGrounded = true;
         player.isJumping = false;
     }
     
+    // 更新相机位置
+    updateCamera();
+    
     // 更新投射物
-    projectiles.forEach((projectile, index) => {
+    for (let i = projectiles.length - 1; i >= 0; i--) {
+        const projectile = projectiles[i];
+        if (!projectile) continue;
+        
         projectile.x += projectile.velocityX;
         projectile.y += projectile.velocityY;
         projectile.lifetime--;
         
         // 检查投射物是否碰到敌人（只击中第一个目标）
         let hitEnemy = false;
-        enemies.forEach(enemy => {
-            if (!hitEnemy && checkCollision(projectile, enemy)) {
-                enemy.health = 0; // 直接销毁敌人
+        for (let j = 0; j < enemies.length; j++) {
+            const enemy = enemies[j];
+            if (enemy && checkCollision(projectile, enemy)) {
+                // 直接从数组中移除敌人
+                enemies.splice(j, 1);
                 hitEnemy = true;
-                projectiles.splice(index, 1);
+                projectiles.splice(i, 1);
+                break;
             }
-        });
+        }
         
         // 检查投射物是否超出边界或生命周期结束
-        if (!hitEnemy && (projectile.x < 0 || projectile.x > canvas.width || projectile.lifetime <= 0)) {
-            projectiles.splice(index, 1);
+        if (!hitEnemy && (projectile.x < 0 || (currentLevelData && currentLevelData.width && projectile.x > currentLevelData.width) || projectile.lifetime <= 0)) {
+            projectiles.splice(i, 1);
         }
-    });
+    }
     
     // 更新敌人
-    enemies.forEach(enemy => {
+    for (let i = enemies.length - 1; i >= 0; i--) {
+        const enemy = enemies[i];
         // 敌人移动
         enemy.x += enemy.velocityX;
         
         // 敌人边界检测
-        if (enemy.x < 0 || enemy.x > canvas.width - enemy.width) {
+        if (enemy.x < 0) {
+            enemy.x = 0;
+            enemy.velocityX *= -1;
+        } else if (enemy.x > currentLevelData.width - enemy.width) {
+            enemy.x = currentLevelData.width - enemy.width;
             enemy.velocityX *= -1;
         }
         
@@ -812,11 +1643,20 @@ function update() {
         enemy.y += 2;
         
         // 敌人碰撞检测
+        let onPlatform = false;
         currentLevelData.platforms.forEach(platform => {
             if (checkCollision(enemy, platform)) {
-                enemy.y = platform.y - enemy.height;
+                if (enemy.y + enemy.height > platform.y && enemy.y < platform.y) {
+                    enemy.y = platform.y - enemy.height;
+                    onPlatform = true;
+                }
             }
         });
+        
+        // 检查敌人是否掉出画布底部
+        if (enemy.y > canvas.height) {
+            enemies.splice(i, 1);
+        }
         
         // 检查玩家与敌人碰撞
         if (checkCollision(player, enemy) && !isInvincible) {
@@ -828,15 +1668,35 @@ function update() {
                 invincibilityTimer = Date.now();
             }
         }
-        
-        // 检查敌人是否死亡
-        if (enemy.health <= 0) {
-            const enemyIndex = enemies.indexOf(enemy);
-            if (enemyIndex > -1) {
-                enemies.splice(enemyIndex, 1);
+    }
+    
+    // 检查尖刺碰撞
+    if (currentLevelData && currentLevelData.spikes && Array.isArray(currentLevelData.spikes)) {
+        currentLevelData.spikes.forEach(spike => {
+            if (spike && checkCollision(player, spike) && !isInvincible) {
+                // 玩家受伤
+                if (playerHealth > 0) {
+                    playerHealth--;
+                    // 进入无敌状态
+                    isInvincible = true;
+                    invincibilityTimer = Date.now();
+                }
+            }
+        });
+    }
+    
+    // 检查金币收集
+    if (currentLevelData && currentLevelData.coins && Array.isArray(currentLevelData.coins)) {
+        for (let i = currentLevelData.coins.length - 1; i >= 0; i--) {
+            const coin = currentLevelData.coins[i];
+            if (coin && checkCollision(player, coin)) {
+                // 收集金币
+                coins++;
+                // 从关卡中移除金币
+                currentLevelData.coins.splice(i, 1);
             }
         }
-    });
+    }
     
     // 检查玩家健康值
     if (playerHealth <= 0 && !gameOver) {
@@ -853,10 +1713,17 @@ function update() {
         let starsCount = 1; // 基础星
         const killedEnemies = initialEnemyCount - enemies.length;
         
-        if (killedEnemies > 0 && killedEnemies < initialEnemyCount) {
-            starsCount = 2;
-        } else if (killedEnemies === initialEnemyCount) {
+        // 三星：需要满血，杀掉所有怪物，到达终点
+        if (playerHealth === maxHealth && killedEnemies === initialEnemyCount) {
             starsCount = 3;
+        }
+        // 两星：要么满血，并且击杀起码一个怪物通关；要么少血（大于1滴）杀完怪物通关
+        else if ((playerHealth === maxHealth && killedEnemies > 0) || (playerHealth > 1 && killedEnemies === initialEnemyCount)) {
+            starsCount = 2;
+        }
+        // 一星：满血直接通关不击杀怪物；或者只剩一滴血杀完怪物通关
+        else {
+            starsCount = 1;
         }
         
         // 显示星级
@@ -870,10 +1737,7 @@ function update() {
         }
         
         // 解锁下一关
-        if (currentLevel < unlockedLevels) {
-            unlockedLevels = currentLevel;
-        }
-        if (currentLevel < levels.length && currentLevel >= unlockedLevels) {
+        if (currentLevel >= unlockedLevels && currentLevel < levels.length) {
             unlockedLevels = currentLevel + 1;
         }
         
@@ -919,8 +1783,18 @@ function render() {
     ctx.fillStyle = '#87CEEB';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
+    // 应用相机变换
+    ctx.save();
+    ctx.translate(-camera.x, -camera.y);
+    
     // 绘制平台
     drawPlatforms();
+    
+    // 绘制尖刺
+    drawSpikes();
+    
+    // 绘制金币
+    drawCoins();
     
     // 绘制敌人
     drawEnemies();
@@ -936,6 +1810,9 @@ function render() {
     
     // 绘制武器
     drawWeapon();
+    
+    // 恢复相机变换
+    ctx.restore();
     
     // 绘制血条
     drawHealthBar();
@@ -953,6 +1830,11 @@ function render() {
     ctx.fillText(`攻击: J`, 10, 50);
     ctx.fillText(`切换武器: I`, 10, 70);
     
+    // 绘制金币数量
+    ctx.fillStyle = '#FFD700';
+    ctx.font = '16px Arial';
+    ctx.fillText(`金币: ${coins}`, 10, 90);
+    
     // 绘制提示信息
     ctx.fillStyle = '#000';
     ctx.font = '14px Arial';
@@ -963,8 +1845,14 @@ function render() {
 
 // 游戏循环
 function gameLoop() {
-    update();
-    render();
+    try {
+        if (!isPaused) {
+            update();
+        }
+        render();
+    } catch (error) {
+        console.error('游戏出错:', error);
+    }
     requestAnimationFrame(gameLoop);
 }
 
@@ -973,9 +1861,241 @@ startButton.addEventListener('click', () => {
     showScreen(levelSelect);
 });
 
+// 商城按钮点击事件
+shopButton.addEventListener('click', () => {
+    showScreen(shopScreen);
+});
+
+backToStartFromShop.addEventListener('click', () => {
+    showScreen(startScreen);
+});
+
+// 换装按钮点击事件
+customizeButton.addEventListener('click', () => {
+    showScreen(customizeScreen);
+});
+
+// 从换装界面返回主界面
+backToStartFromCustomize.addEventListener('click', () => {
+    showScreen(startScreen);
+});
+
+// 关卡选择界面返回主界面
 backToStart.addEventListener('click', () => {
     showScreen(startScreen);
 });
+
+// 标签页切换事件
+tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        
+        // 移除所有标签页的活动状态
+        tabBtns.forEach(b => b.classList.remove('active'));
+        tabContents.forEach(c => c.classList.remove('active'));
+        
+        // 添加当前标签页的活动状态
+        btn.classList.add('active');
+        document.getElementById(`${tab}-tab`).classList.add('active');
+    });
+});
+
+// 显示金币不足提示
+function showCoinNotification() {
+    const notification = document.getElementById('coinNotification');
+    if (notification) {
+        notification.textContent = '金币不足，无法购买';
+        notification.classList.add('show');
+        setTimeout(() => {
+            notification.classList.remove('show');
+        }, 2000);
+    }
+}
+
+// 全局变量，用于存储当前预览的皮肤
+let previewSkin = currentSkin;
+
+// 皮肤项目点击事件
+function bindSkinItemEvents() {
+    const skinItems = document.querySelectorAll('.skin-item');
+    skinItems.forEach(item => {
+        item.addEventListener('click', () => {
+            const skin = item.dataset.skin;
+            const isCustomSkin = item.classList.contains('custom-skin-item');
+            
+            // 预览皮肤
+            if (isCustomSkin) {
+                previewSkin = 'custom';
+            } else {
+                previewSkin = skin;
+            }
+            updateCustomizeScreen();
+            
+            // 更新购买按钮状态
+            updateBuyButton();
+        });
+    });
+}
+
+// 更新购买按钮状态
+function updateBuyButton() {
+    const buyButton = document.getElementById('buySkinButton');
+    if (!buyButton) return;
+    
+    const isCustomSkin = previewSkin === 'custom';
+    const isOwned = isCustomSkin ? !!customSkin : ownedSkins.includes(previewSkin);
+    const skin = previewSkin;
+    
+    // 设置按钮样式
+    buyButton.style.position = 'absolute';
+    buyButton.style.bottom = '20px';
+    buyButton.style.left = '50%';
+    buyButton.style.transform = 'translateX(-50%)';
+    buyButton.style.padding = '12px 30px';
+    buyButton.style.fontSize = '16px';
+    buyButton.style.fontWeight = 'bold';
+    buyButton.style.color = 'white';
+    buyButton.style.border = 'none';
+    buyButton.style.borderRadius = '25px';
+    buyButton.style.cursor = 'pointer';
+    buyButton.style.transition = 'all 0.3s ease';
+    buyButton.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+    
+    if (isCustomSkin) {
+        if (isOwned) {
+            // 已拥有的自定义皮肤，显示装备按钮
+            buyButton.textContent = '装备';
+            buyButton.style.display = 'block';
+            buyButton.style.backgroundColor = '#4CAF50';
+            buyButton.disabled = false;
+        } else {
+            // 未拥有的自定义皮肤，显示上传按钮
+            buyButton.textContent = '上传';
+            buyButton.style.display = 'block';
+            buyButton.style.backgroundColor = '#2196F3';
+            buyButton.disabled = false;
+        }
+    } else if (isOwned) {
+        // 已拥有的皮肤，显示装备按钮
+        buyButton.textContent = '装备';
+        buyButton.style.display = 'block';
+        buyButton.style.backgroundColor = '#4CAF50';
+        buyButton.disabled = false;
+    } else if (skinData[skin].price > 0 && coins >= skinData[skin].price) {
+        // 未拥有的皮肤，金币足够，显示购买按钮
+        buyButton.textContent = `购买 (${skinData[skin].price}金币)`;
+        buyButton.style.display = 'block';
+        buyButton.style.backgroundColor = '#2196F3';
+        buyButton.disabled = false;
+    } else if (skinData[skin].price > 0 && coins < skinData[skin].price) {
+        // 金币不足，显示金币不足按钮
+        buyButton.textContent = '金币不足';
+        buyButton.style.display = 'block';
+        buyButton.style.backgroundColor = '#cccccc';
+        buyButton.disabled = true;
+    } else {
+        // 其他情况，隐藏按钮
+        buyButton.style.display = 'none';
+        buyButton.disabled = false;
+    }
+}
+
+// 购买按钮点击事件
+function setupBuyButtonEvent() {
+    const buyButton = document.getElementById('buySkinButton');
+    if (buyButton) {
+        // 移除之前的事件监听器，避免重复绑定
+        buyButton.removeEventListener('click', handleBuyButtonClick);
+        
+        // 绑定新的事件监听器
+        buyButton.addEventListener('click', handleBuyButtonClick);
+    }
+}
+
+// 购买按钮点击处理函数
+function handleBuyButtonClick() {
+    const skin = previewSkin;
+    const isCustomSkin = skin === 'custom';
+    const isOwned = isCustomSkin ? !!customSkin : ownedSkins.includes(skin);
+    
+    if (isCustomSkin) {
+        if (isOwned) {
+            // 已拥有的自定义皮肤，直接装备
+            currentSkin = skin;
+            updateCustomizeScreen();
+            alert('已改变角色外观');
+        } else {
+            // 未拥有的自定义皮肤，打开上传弹窗
+            const customSkinInfoModal = document.getElementById('customSkinInfoModal');
+            if (customSkinInfoModal) {
+                customSkinInfoModal.style.display = 'flex';
+            }
+        }
+    } else if (isOwned) {
+        // 已拥有的皮肤，直接装备
+        currentSkin = skin;
+        updateCustomizeScreen();
+        alert('已改变角色外观');
+    } else if (skinData[skin].price > 0 && coins >= skinData[skin].price) {
+        // 未拥有的皮肤，购买前确认
+        if (confirm(`是否购买皮肤：${skinData[skin].name}`)) {
+            coins -= skinData[skin].price;
+            ownedSkins.push(skin);
+            currentSkin = skin;
+            
+            // 从商城中移除该皮肤并添加到"我的"栏目
+            moveSkinToMyCollection(skin);
+            
+            updateCustomizeScreen();
+            alert('已购买并装备新外观');
+        }
+    }
+}
+
+// 将皮肤从商城移到"我的"栏目
+function moveSkinToMyCollection(skin) {
+    // 找到商城中的皮肤项
+    const shopSkinItem = document.querySelector(`#shop-tab .skin-item[data-skin="${skin}"]`);
+    if (shopSkinItem) {
+        // 创建新的皮肤项
+        const newSkinItem = document.createElement('div');
+        newSkinItem.className = 'skin-item';
+        newSkinItem.dataset.skin = skin;
+        newSkinItem.innerHTML = `
+            <div class="skin-icon ${skin}"></div>
+            <span>${skinData[skin].name}</span>
+            <div class="skin-status">已拥有</div>
+        `;
+        
+        // 添加到"我的"栏目
+        const myTab = document.getElementById('my-tab');
+        const mySkinGrid = myTab.querySelector('.skin-grid');
+        if (mySkinGrid) {
+            mySkinGrid.appendChild(newSkinItem);
+        }
+        
+        // 从商城中移除
+        shopSkinItem.remove();
+        
+        // 重新绑定事件
+        bindSkinItemEvents();
+    }
+}
+
+// 初始绑定事件
+bindSkinItemEvents();
+// 初始化购买按钮事件
+setupBuyButtonEvent();
+// 初始化背包系统
+initBackpack();
+// 绑定背包相关事件
+bindBackpackEvents();
+// 绑定商城商品事件
+bindShopItemEvents();
+// 绑定自定义皮肤上传事件
+bindCustomSkinUploadEvent();
+
+
 
 replayLevel.addEventListener('click', () => {
     winPopup.classList.remove('active');
@@ -1015,10 +2135,535 @@ restartLevel.addEventListener('click', () => {
     initGame(currentLevel);
 });
 
-backToLevelSelect.addEventListener('click', () => {
+const backToLevelSelectFromGameOver = document.getElementById('backToLevelSelectFromGameOver');
+backToLevelSelectFromGameOver.addEventListener('click', () => {
     gameOverPopup.classList.remove('active');
     showScreen(levelSelect);
 });
+
+// 初始化背包系统
+function initBackpack() {
+    // 添加初始金币到背包
+    addItemToBackpack('coin', coins);
+}
+
+// 添加物品到背包
+function addItemToBackpack(itemId, quantity = 1) {
+    // 检查物品是否已在背包中
+    const existingItem = backpack.find(item => item.id === itemId);
+    
+    if (existingItem) {
+        // 如果已存在，增加数量
+        existingItem.quantity += quantity;
+    } else {
+        // 如果不存在，添加新物品
+        backpack.push({
+            id: itemId,
+            quantity: quantity
+        });
+    }
+    
+    // 如果是金币，同时更新全局金币数量
+    if (itemId === 'coin') {
+        coins = existingItem ? existingItem.quantity : quantity;
+        // 更新金币显示
+        if (coinCount) coinCount.textContent = coins;
+        if (customizeCoinCount) customizeCoinCount.textContent = coins;
+    }
+}
+
+// 更新背包界面
+function updateBackpackScreen() {
+    const backpackGrid = document.querySelector('.backpack-grid');
+    if (!backpackGrid) return;
+    
+    // 清空背包格子
+    backpackGrid.innerHTML = '';
+    
+    // 添加金币物品
+    const coinItem = document.createElement('div');
+    coinItem.className = 'backpack-item';
+    coinItem.innerHTML = `
+        <div class="backpack-item-icon" style="background-image: url('${itemData.coin.icon}');"></div>
+        <div class="backpack-item-name">${itemData.coin.name}</div>
+        <div class="backpack-item-count">${coins}</div>
+    `;
+    backpackGrid.appendChild(coinItem);
+    
+    // 添加其他物品
+    backpack.forEach(item => {
+        if (item.id !== 'coin') {
+            const itemElement = document.createElement('div');
+            itemElement.className = 'backpack-item';
+            itemElement.innerHTML = `
+                <div class="backpack-item-icon" style="background-image: url('${itemData[item.id].icon}');"></div>
+                <div class="backpack-item-name">${itemData[item.id].name}</div>
+                <div class="backpack-item-count">${item.quantity}</div>
+            `;
+            
+            // 添加点击事件
+            itemElement.addEventListener('click', () => {
+                if (item.id === 'letter') {
+                    // 显示信纸弹窗
+                    document.getElementById('letterPopup').classList.add('active');
+                }
+            });
+            
+            backpackGrid.appendChild(itemElement);
+        }
+    });
+}
+
+// 绑定背包相关事件
+function bindBackpackEvents() {
+    // 背包按钮点击事件
+    const backpackButton = document.getElementById('backpackButton');
+    if (backpackButton) {
+        backpackButton.addEventListener('click', () => {
+            showScreen(document.getElementById('backpackScreen'));
+            updateBackpackScreen();
+        });
+    }
+    
+    // 从背包返回主界面
+    const backToStartFromBackpack = document.getElementById('backToStartFromBackpack');
+    if (backToStartFromBackpack) {
+        backToStartFromBackpack.addEventListener('click', () => {
+            showScreen(startScreen);
+        });
+    }
+    
+    // 关闭信纸弹窗
+    const closeLetter = document.getElementById('closeLetter');
+    if (closeLetter) {
+        closeLetter.addEventListener('click', () => {
+            document.getElementById('letterPopup').classList.remove('active');
+        });
+    }
+}
+
+// 绑定商城商品事件
+function bindShopItemEvents() {
+    const shopItems = document.querySelectorAll('.shop-item');
+    shopItems.forEach(item => {
+        const buyButton = item.querySelector('.shop-item-buy');
+        if (buyButton) {
+            buyButton.addEventListener('click', () => {
+                const itemId = item.dataset.item;
+                
+                if (itemId === 'letter') {
+                    // 购买作者给你的信
+                    addItemToBackpack('letter', 1);
+                    alert('已购买并添加到背包');
+                }
+            });
+        }
+    });
+}
+
+// 绑定自定义皮肤上传事件
+function bindCustomSkinUploadEvent() {
+    const customSkinUpload = document.getElementById('customSkinUpload');
+    if (customSkinUpload) {
+        customSkinUpload.addEventListener('click', function(e) {
+            e.preventDefault();
+            // 打开自定义皮肤信息设置弹窗
+            const customSkinInfoModal = document.getElementById('customSkinInfoModal');
+            if (customSkinInfoModal) {
+                customSkinInfoModal.style.display = 'flex';
+            }
+        });
+    }
+    
+    // 绑定自定义皮肤信息设置弹窗事件
+    const customSkinUploadBtn = document.getElementById('customSkinUploadBtn');
+    const startCropBtn = document.getElementById('startCropBtn');
+    const saveCustomSkinBtn = document.getElementById('saveCustomSkinBtn');
+    const cancelCustomSkinBtn = document.getElementById('cancelCustomSkinBtn');
+    
+    if (customSkinUploadBtn) {
+        customSkinUploadBtn.addEventListener('change', handleCustomSkinFileSelect);
+    }
+    
+    if (startCropBtn) {
+        startCropBtn.addEventListener('click', handleStartCrop);
+    }
+    
+    if (saveCustomSkinBtn) {
+        saveCustomSkinBtn.addEventListener('click', handleSaveCustomSkin);
+    }
+    
+    if (cancelCustomSkinBtn) {
+        cancelCustomSkinBtn.addEventListener('click', handleCancelCustomSkin);
+    }
+    
+    // 绑定裁剪弹窗事件
+    const confirmCrop = document.getElementById('confirmCrop');
+    const cancelCrop = document.getElementById('cancelCrop');
+    
+    if (confirmCrop) {
+        confirmCrop.addEventListener('click', handleConfirmCrop);
+    }
+    
+    if (cancelCrop) {
+        cancelCrop.addEventListener('click', handleCancelCrop);
+    }
+}
+
+// 处理自定义皮肤文件选择
+function handleCustomSkinFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const customSkinPreview = document.getElementById('customSkinPreview');
+        if (customSkinPreview) {
+            customSkinPreview.src = e.target.result;
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+// 裁剪相关变量
+let cropBox = null;
+let cropImage = null;
+let isDragging = false;
+let isResizing = false;
+let dragStart = { x: 0, y: 0 };
+let resizeHandle = null;
+
+// 初始化裁剪功能
+function initCrop() {
+    cropImage = document.getElementById('cropImage');
+    cropBox = document.getElementById('cropBox');
+    
+    if (!cropImage || !cropBox) return;
+    
+    // 重置裁剪框位置和大小
+    resetCropBox();
+    
+    // 绑定事件
+    bindCropEvents();
+}
+
+// 重置裁剪框
+function resetCropBox() {
+    if (!cropImage || !cropBox) return;
+    
+    // 等待图片加载完成
+    cropImage.onload = function() {
+        const container = document.querySelector('.crop-container');
+        const containerWidth = container.offsetWidth;
+        const containerHeight = container.offsetHeight;
+        const imageWidth = cropImage.width;
+        const imageHeight = cropImage.height;
+        
+        // 计算图片缩放比例，使图片适应容器
+        const scale = Math.min(containerWidth / imageWidth, containerHeight / imageHeight);
+        cropImage.style.width = (imageWidth * scale) + 'px';
+        cropImage.style.height = (imageHeight * scale) + 'px';
+        
+        // 居中图片
+        cropImage.style.left = ((containerWidth - imageWidth * scale) / 2) + 'px';
+        cropImage.style.top = ((containerHeight - imageHeight * scale) / 2) + 'px';
+        
+        // 设置裁剪框大小为图片的80%
+        const boxSize = Math.min(imageWidth * scale, imageHeight * scale) * 0.8;
+        cropBox.style.width = boxSize + 'px';
+        cropBox.style.height = boxSize + 'px';
+        
+        // 居中裁剪框
+        cropBox.style.left = ((containerWidth - boxSize) / 2) + 'px';
+        cropBox.style.top = ((containerHeight - boxSize) / 2) + 'px';
+    };
+}
+
+// 绑定裁剪事件
+function bindCropEvents() {
+    if (!cropImage || !cropBox) return;
+    
+    // 裁剪框拖动
+    cropBox.addEventListener('mousedown', startDrag);
+    
+    // 裁剪框调整大小
+    const handles = cropBox.querySelectorAll('.crop-handle');
+    handles.forEach(handle => {
+        handle.addEventListener('mousedown', startResize);
+    });
+    
+    // 图片拖动
+    cropImage.addEventListener('mousedown', startImageDrag);
+    
+    // 鼠标移动
+    document.addEventListener('mousemove', handleMouseMove);
+    
+    // 鼠标释放
+    document.addEventListener('mouseup', stopDrag);
+}
+
+// 开始拖动
+function startDrag(e) {
+    if (e.target.classList.contains('crop-handle')) return;
+    isDragging = true;
+    dragStart.x = e.clientX - cropBox.getBoundingClientRect().left;
+    dragStart.y = e.clientY - cropBox.getBoundingClientRect().top;
+}
+
+// 开始调整大小
+function startResize(e) {
+    isResizing = true;
+    resizeHandle = e.target;
+    dragStart.x = e.clientX;
+    dragStart.y = e.clientY;
+    e.stopPropagation();
+}
+
+// 开始拖动图片
+function startImageDrag(e) {
+    isDragging = true;
+    dragStart.x = e.clientX - cropImage.getBoundingClientRect().left;
+    dragStart.y = e.clientY - cropImage.getBoundingClientRect().top;
+    e.stopPropagation();
+}
+
+// 处理鼠标移动
+function handleMouseMove(e) {
+    if (!isDragging && !isResizing) return;
+    
+    const container = document.querySelector('.crop-container');
+    const containerRect = container.getBoundingClientRect();
+    
+    if (isDragging) {
+        if (e.target === cropImage) {
+            // 拖动图片
+            let newLeft = e.clientX - containerRect.left - dragStart.x;
+            let newTop = e.clientY - containerRect.top - dragStart.y;
+            
+            // 限制图片在容器内
+            newLeft = Math.max(0, Math.min(newLeft, containerRect.width - cropImage.offsetWidth));
+            newTop = Math.max(0, Math.min(newTop, containerRect.height - cropImage.offsetHeight));
+            
+            cropImage.style.left = newLeft + 'px';
+            cropImage.style.top = newTop + 'px';
+        } else {
+            // 拖动裁剪框
+            let newLeft = e.clientX - containerRect.left - dragStart.x;
+            let newTop = e.clientY - containerRect.top - dragStart.y;
+            
+            // 限制裁剪框在容器内
+            newLeft = Math.max(0, Math.min(newLeft, containerRect.width - cropBox.offsetWidth));
+            newTop = Math.max(0, Math.min(newTop, containerRect.height - cropBox.offsetHeight));
+            
+            cropBox.style.left = newLeft + 'px';
+            cropBox.style.top = newTop + 'px';
+        }
+    } else if (isResizing) {
+        // 调整裁剪框大小
+        const containerWidth = containerRect.width;
+        const containerHeight = containerRect.height;
+        const currentLeft = parseInt(cropBox.style.left) || 0;
+        const currentTop = parseInt(cropBox.style.top) || 0;
+        const currentWidth = cropBox.offsetWidth;
+        const currentHeight = cropBox.offsetHeight;
+        
+        let newWidth = currentWidth;
+        let newHeight = currentHeight;
+        let newLeft = currentLeft;
+        let newTop = currentTop;
+        
+        if (resizeHandle.classList.contains('crop-handle-br')) {
+            // 右下角调整
+            newWidth = Math.max(50, e.clientX - containerRect.left - currentLeft);
+            newHeight = Math.max(50, e.clientY - containerRect.top - currentTop);
+        } else if (resizeHandle.classList.contains('crop-handle-tl')) {
+            // 左上角调整
+            newWidth = Math.max(50, currentWidth + currentLeft - (e.clientX - containerRect.left));
+            newHeight = Math.max(50, currentHeight + currentTop - (e.clientY - containerRect.top));
+            newLeft = Math.min(currentLeft, e.clientX - containerRect.left);
+            newTop = Math.min(currentTop, e.clientY - containerRect.top);
+        } else if (resizeHandle.classList.contains('crop-handle-tr')) {
+            // 右上角调整
+            newWidth = Math.max(50, e.clientX - containerRect.left - currentLeft);
+            newHeight = Math.max(50, currentHeight + currentTop - (e.clientY - containerRect.top));
+            newTop = Math.min(currentTop, e.clientY - containerRect.top);
+        } else if (resizeHandle.classList.contains('crop-handle-bl')) {
+            // 左下角调整
+            newWidth = Math.max(50, currentWidth + currentLeft - (e.clientX - containerRect.left));
+            newHeight = Math.max(50, e.clientY - containerRect.top - currentTop);
+            newLeft = Math.min(currentLeft, e.clientX - containerRect.left);
+        }
+        
+        // 保持正方形
+        newWidth = Math.min(newWidth, containerWidth - newLeft);
+        newHeight = Math.min(newHeight, containerHeight - newTop);
+        const size = Math.min(newWidth, newHeight);
+        
+        cropBox.style.width = size + 'px';
+        cropBox.style.height = size + 'px';
+        cropBox.style.left = newLeft + 'px';
+        cropBox.style.top = newTop + 'px';
+    }
+}
+
+// 停止拖动
+function stopDrag() {
+    isDragging = false;
+    isResizing = false;
+    resizeHandle = null;
+}
+
+// 处理开始裁剪
+function handleStartCrop() {
+    const customSkinPreview = document.getElementById('customSkinPreview');
+    if (!customSkinPreview || !customSkinPreview.src) {
+        alert('请先选择一张图片');
+        return;
+    }
+    
+    const cropModal = document.getElementById('cropModal');
+    const cropImage = document.getElementById('cropImage');
+    
+    if (cropModal && cropImage) {
+        cropImage.src = customSkinPreview.src;
+        cropModal.style.display = 'flex';
+        
+        // 初始化裁剪功能
+        setTimeout(initCrop, 100);
+    }
+}
+
+// 存储自定义皮肤名称
+let customSkinName = '自定义皮肤';
+
+// 处理保存自定义皮肤
+function handleSaveCustomSkin() {
+    const skinName = document.getElementById('customSkinName').value;
+    if (!skinName) {
+        alert('请输入皮肤名称');
+        return;
+    }
+    
+    if (!customSkin) {
+        alert('请先上传并裁剪图片');
+        return;
+    }
+    
+    // 保存自定义皮肤信息
+    customSkinName = skinName;
+    
+    // 添加自定义皮肤到拥有的皮肤列表
+    if (!ownedSkins.includes('custom')) {
+        ownedSkins.push('custom');
+    }
+    
+    // 设置为当前皮肤
+    currentSkin = 'custom';
+    
+    // 关闭自定义皮肤信息设置弹窗
+    document.getElementById('customSkinInfoModal').style.display = 'none';
+    
+    // 更新换装界面
+    updateCustomizeScreen();
+    
+    // 显示成功提示
+    alert('自定义皮肤已保存并装备');
+}
+
+// 处理取消自定义皮肤
+function handleCancelCustomSkin() {
+    document.getElementById('customSkinInfoModal').style.display = 'none';
+}
+
+// 处理裁剪确认
+function handleConfirmCrop() {
+    const cropImage = document.getElementById('cropImage');
+    const cropBox = document.getElementById('cropBox');
+    if (!cropImage || !cropBox) return;
+    
+    // 获取裁剪框和图片的位置和大小
+    const container = document.querySelector('.crop-container');
+    const containerRect = container.getBoundingClientRect();
+    const cropBoxRect = cropBox.getBoundingClientRect();
+    const cropImageRect = cropImage.getBoundingClientRect();
+    
+    // 计算裁剪区域相对于图片的位置和大小
+    const scaleX = cropImage.width / parseFloat(cropImage.style.width);
+    const scaleY = cropImage.height / parseFloat(cropImage.style.height);
+    
+    const cropX = (cropBoxRect.left - cropImageRect.left) * scaleX;
+    const cropY = (cropBoxRect.top - cropImageRect.top) * scaleY;
+    const cropWidth = cropBoxRect.width * scaleX;
+    const cropHeight = cropBoxRect.height * scaleY;
+    
+    // 创建canvas用于裁剪
+    const canvas = document.createElement('canvas');
+    canvas.width = 200;
+    canvas.height = 200;
+    const ctx = canvas.getContext('2d');
+    
+    // 绘制并裁剪图片
+    ctx.drawImage(cropImage, cropX, cropY, cropWidth, cropHeight, 0, 0, 200, 200);
+    
+    // 转换为图片对象
+    const img = new Image();
+    img.src = canvas.toDataURL('image/png');
+    img.onload = function() {
+        customSkin = img;
+        
+        // 关闭裁剪弹窗
+        document.getElementById('cropModal').style.display = 'none';
+        
+        // 更新预览
+        const customSkinPreview = document.getElementById('customSkinPreview');
+        if (customSkinPreview) {
+            customSkinPreview.src = img.src;
+        }
+    };
+}
+
+// 处理裁剪取消
+function handleCancelCrop() {
+    document.getElementById('cropModal').style.display = 'none';
+}
+
+// 更新showScreen函数，添加对背包界面的支持
+function showScreen(screen) {
+    // 隐藏所有屏幕和弹窗
+    startScreen.classList.remove('active');
+    levelSelect.classList.remove('active');
+    gameScreen.classList.remove('active');
+    winPopup.classList.remove('active');
+    allLevelsCompletePopup.classList.remove('active');
+    gameOverPopup.classList.remove('active');
+    shopScreen.classList.remove('active');
+    customizeScreen.classList.remove('active');
+    document.getElementById('backpackScreen').classList.remove('active');
+    document.getElementById('letterPopup').classList.remove('active');
+    
+    // 显示目标屏幕
+    screen.classList.add('active');
+    
+    // 如果显示的是关卡选择界面，更新关卡状态
+    if (screen === levelSelect) {
+        updateLevelSelect();
+    }
+    
+    // 如果显示的是商城界面，更新金币显示
+    if (screen === shopScreen && coinCount) {
+        coinCount.textContent = coins;
+    }
+    
+    // 如果显示的是换装界面，更新预览和皮肤状态
+    if (screen === customizeScreen) {
+        updateCustomizeScreen();
+    }
+    
+    // 如果显示的是背包界面，更新背包内容
+    if (screen.id === 'backpackScreen') {
+        updateBackpackScreen();
+    }
+}
 
 // 关卡选择
 levelItems.forEach(item => {
@@ -1033,26 +2678,31 @@ levelItems.forEach(item => {
 // 蜂蜜罐子按钮点击事件
 honeyJarButton.addEventListener('click', () => {
     settingsPopup.classList.add('active');
+    isPaused = true; // 暂停游戏
 });
 
 // 设置界面按钮事件
 restartFromSettings.addEventListener('click', () => {
     settingsPopup.classList.remove('active');
+    isPaused = false; // 恢复游戏
     initGame(currentLevel);
 });
 
 backToLevelSelectFromSettings.addEventListener('click', () => {
     settingsPopup.classList.remove('active');
+    isPaused = false; // 恢复游戏
     showScreen(levelSelect);
 });
 
 backToMainFromSettings.addEventListener('click', () => {
     settingsPopup.classList.remove('active');
+    isPaused = false; // 恢复游戏
     showScreen(startScreen);
 });
 
 closeSettings.addEventListener('click', () => {
     settingsPopup.classList.remove('active');
+    isPaused = false; // 恢复游戏
 });
 
 // 虚拟按键事件监听器

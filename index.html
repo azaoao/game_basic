@@ -15,6 +15,12 @@
                 <div class="character"></div>
             </div>
             <button id="startButton" class="start-btn">开始游戏</button>
+            <button id="shopButton" class="start-btn">商城</button>
+            <button id="customizeButton" class="start-btn">换装</button>
+            <button id="backpackButton" class="backpack-btn">
+                <div class="backpack-icon"></div>
+                <div class="backpack-text">背包</div>
+            </button>
         </div>
     </div>
     
@@ -148,7 +154,7 @@
             <p>你的血条已清空，挑战失败！</p>
             <div class="popup-buttons">
                 <button id="restartLevel" class="popup-btn">重新开始</button>
-                <button id="backToLevelSelect" class="popup-btn">返回关卡选择</button>
+                <button id="backToLevelSelectFromGameOver" class="popup-btn">返回关卡选择</button>
             </div>
         </div>
     </div>
@@ -160,6 +166,180 @@
             <p>太棒了！你已经成功挑战了所有关卡！</p>
             <div class="popup-buttons">
                 <button id="backToMenuFromAllComplete" class="popup-btn">返回主界面</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 商城界面 -->
+    <div id="shopScreen" class="screen">
+        <h2>商城</h2>
+        <div class="shop-content">
+            <div class="coin-display">
+                <span>金币: <span id="coinCount">0</span></span>
+            </div>
+            <div class="shop-items">
+                <div class="shop-item" data-item="letter">
+                    <div class="shop-item-icon letter-icon"></div>
+                    <span class="shop-item-name">作者给你的信</span>
+                    <div class="shop-item-price">0金币</div>
+                    <button class="shop-item-buy">购买</button>
+                </div>
+            </div>
+            <button id="backToStartFromShop" class="back-btn">返回主界面</button>
+        </div>
+    </div>
+    
+    <!-- 换装界面 -->
+    <div id="customizeScreen" class="screen">
+        <h2>换装系统</h2>
+        <div class="customize-content">
+            <div class="character-preview">
+                <div id="previewCharacter" class="character-large"></div>
+                <div class="preview-actions">
+                    <button id="buySkinButton" class="buy-btn" style="display: none;">购买</button>
+                </div>
+            </div>
+            <div class="customize-panel">
+                <div class="customize-header">
+                    <div class="customize-tabs">
+                        <button class="tab-btn active" data-tab="my">我的</button>
+                        <button class="tab-btn" data-tab="shop">商城</button>
+                        <button class="tab-btn" data-tab="special">特殊</button>
+                    </div>
+                    <div class="coin-display" id="customizeCoinDisplay">
+                        金币: <span id="customizeCoinCount">0</span>
+                    </div>
+                </div>
+                <div class="notification" id="coinNotification"></div>
+                <div class="tab-content active" id="my-tab">
+                    <div class="skin-grid">
+                        <div class="skin-item active" data-skin="bee">
+                            <div class="skin-icon bee"></div>
+                            <span>小蜜蜂</span>
+                            <div class="skin-status">当前</div>
+                        </div>
+                        <div class="skin-item custom-skin-item">
+                            <div class="custom-skin-upload">
+                                <input type="file" id="customSkinUpload" accept="image/*" style="display: none;">
+                                <label for="customSkinUpload" class="custom-skin-label">
+                                    <div class="custom-skin-icon">
+                                        <div class="upload-icon">+</div>
+                                    </div>
+                                    <span>自定义</span>
+                                    <div class="skin-status">上传</div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-content" id="shop-tab">
+                    <div class="skin-grid">
+                        <div class="skin-item" data-skin="orange">
+                            <div class="skin-icon orange"></div>
+                            <span>橙子</span>
+                            <div class="skin-price">10金币</div>
+                        </div>
+                        <div class="skin-item" data-skin="apple">
+                            <div class="skin-icon apple"></div>
+                            <span>苹果</span>
+                            <div class="skin-price">10金币</div>
+                        </div>
+                        <div class="skin-item" data-skin="butterfly">
+                            <div class="skin-icon butterfly"></div>
+                            <span>蝴蝶</span>
+                            <div class="skin-price">10金币</div>
+                        </div>
+                        <div class="skin-item" data-skin="pineapple">
+                            <div class="skin-icon pineapple"></div>
+                            <span>菠萝</span>
+                            <div class="skin-price">10金币</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-content" id="special-tab">
+                    <div class="skin-grid">
+                        <div class="skin-item locked" data-skin="special1">
+                            <div class="skin-icon special"></div>
+                            <span>特殊外观</span>
+                            <div class="skin-status">未解锁</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button id="backToStartFromCustomize" class="back-btn">返回主界面</button>
+        </div>
+    </div>
+    
+    <!-- 背包界面 -->
+    <div id="backpackScreen" class="screen">
+        <h2>背包</h2>
+        <div class="backpack-content">
+            <div class="backpack-grid">
+                <!-- 背包格子将通过JavaScript动态生成 -->
+            </div>
+            <button id="backToStartFromBackpack" class="back-btn">返回主界面</button>
+        </div>
+    </div>
+    
+    <!-- 信纸弹窗 -->
+    <div id="letterPopup" class="popup">
+        <div class="popup-content letter-content">
+            <h2>作者给你的信</h2>
+            <div class="letter-text">
+                <p>你好，一切顺利，天天开心</p>
+            </div>
+            <div class="popup-buttons">
+                <button id="closeLetter" class="popup-btn">关闭</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 自定义皮肤信息设置弹窗 -->
+    <div id="customSkinInfoModal">
+        <div class="custom-skin-info-content">
+            <h2>自定义皮肤设置</h2>
+            <div class="info-form">
+                <div class="form-group">
+                    <label for="customSkinName">皮肤名称</label>
+                    <input type="text" id="customSkinName" placeholder="输入皮肤名称" value="自定义皮肤">
+                </div>
+                <div class="form-group">
+                    <label for="customSkinPreview">皮肤预览</label>
+                    <div class="preview-container">
+                        <img id="customSkinPreview" class="preview-image" src="" alt="皮肤预览">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="customSkinUploadBtn">选择图片</label>
+                    <input type="file" id="customSkinUploadBtn" accept="image/*">
+                </div>
+            </div>
+            <div class="info-controls">
+                <button id="startCropBtn" class="info-btn crop">裁剪图片</button>
+                <button id="saveCustomSkinBtn" class="info-btn save">保存皮肤</button>
+                <button id="cancelCustomSkinBtn" class="info-btn cancel">取消</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 裁剪弹窗 -->
+    <div id="cropModal">
+        <div class="crop-modal-content">
+            <h2>裁剪图片</h2>
+            <div class="crop-container">
+                <div class="crop-wrapper">
+                    <img id="cropImage" class="crop-image" src="" alt="裁剪预览">
+                    <div id="cropBox" class="crop-box">
+                        <div class="crop-handle crop-handle-tl"></div>
+                        <div class="crop-handle crop-handle-tr"></div>
+                        <div class="crop-handle crop-handle-bl"></div>
+                        <div class="crop-handle crop-handle-br"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="crop-controls">
+                <button id="confirmCrop" class="crop-btn confirm">确认</button>
+                <button id="cancelCrop" class="crop-btn cancel">取消</button>
             </div>
         </div>
     </div>
